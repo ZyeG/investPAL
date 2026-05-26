@@ -27,22 +27,22 @@ mkdir -p "$SKILLS_DIR"
 mkdir -p "$AGENTS_DIR"
 
 echo -e "${BLUE}Installing Main Orchestrator...${NC}"
-if [ -d "$SOURCE_DIR/trade" ]; then
-    cp -r "$SOURCE_DIR/trade" "$SKILLS_DIR/"
-    echo -e "  ${GREEN}✓${NC} trade"
+if [ -d "$SOURCE_DIR/investpal" ]; then
+    cp -r "$SOURCE_DIR/investpal" "$SKILLS_DIR/"
+    echo -e "  ${GREEN}✓${NC} investpal"
 fi
 
 echo -e "${BLUE}Installing Sub-Skills...${NC}"
 if [ -d "$SOURCE_DIR/skills" ]; then
-    cp -r "$SOURCE_DIR/skills/trade-quick-portfolio" "$SKILLS_DIR/"
-    cp -r "$SOURCE_DIR/skills/trade-backtest" "$SKILLS_DIR/"
+    cp -r "$SOURCE_DIR/skills/investpal-quick-portfolio" "$SKILLS_DIR/"
+    cp -r "$SOURCE_DIR/skills/investpal-backtest" "$SKILLS_DIR/"
     echo -e "  ${GREEN}✓${NC} Sub-skills"
 fi
 
 echo -e "${BLUE}Installing Agents...${NC}"
 if [ -d "$SOURCE_DIR/agents" ]; then
     cp "$SOURCE_DIR/agents/"*.md "$AGENTS_DIR/"
-    echo -e "  ${GREEN}✓${NC} Agents (quant-modeler, macro-economist, behavioral-psychologist, risk-actuary)"
+    echo -e "  ${GREEN}✓${NC} Agents (quant-modeler, macro-economist, behavioral-psychologist)"
 fi
 
 echo -e "${GREEN}Done!${NC} Inside your project, run 'mkdir -p output' then type 'claude' to start."
