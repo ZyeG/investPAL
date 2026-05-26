@@ -53,7 +53,7 @@ A replica of `quick-portfolio` restricted to a `<PAST_DATE>` for historical simu
 
 ## Project Structure
 ```text
-ai-trading-claude/
+investPAL/
 ├── agents/
 │   ├── quant-modeler.md
 │   ├── macro-economist.md
@@ -71,5 +71,5 @@ Backtest complete — the system would have called HOLD with strong contrarian-B
   +135% cumulative return (~28% CAGR) with the $124 invalidation level never tested — verdict: SUCCESS,
   though the strict composite understated the opportunity. Total token usage ~30K
 
-  
+
 **Disclaimer:** For educational/research purposes only. Not financial advice.
