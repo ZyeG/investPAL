@@ -11,7 +11,7 @@ This project has been modified from its original 16-skill setup to a streamlined
 3. **Combined `quick-portfolio` Skill**: Created a new single skill `investpal-quick-portfolio` that orchestrates the 3 custom subagents to generate a composite snapshot and robust portfolio analysis (sector allocation, diversification, beta).
 4. **New `backtest` Skill**: Added a new skill `investpal-backtest` to run historical data simulation. It orchestrates the 3 subagents forcing them to look only at past data relative to a given date (limited to a **max 12-month lookup window**) to form a thesis, then includes a verification phase comparing that historical recommendation against current actual market data.
 5. **Token Usage Logging**: Agents and skills log/print estimated token usage for each sub-command and search operation directly to the terminal.
-6. **Output Redirection**: Outputs are redirected into markdown files (`output/quick-portfolio-output.md` and `output/backtest-output.md`).
+6. **Output Redirection**: Outputs are redirected into markdown files (`output/quick-portfolio-output.md` and `output/backtest-output.md`). No longer support pdf generation. 
 
 ## Skills
 
@@ -62,7 +62,10 @@ investPAL/
 ├── skills/
 │   ├── investpal-quick-portfolio/SKILL.md   # Orchestrator (Snapshot + Portfolio)
 │   └── investpal-backtest/SKILL.md          # Historical Strategy Backtest
-...
+├── investpal/
+│   └── SKILL.md                             # Master Orchestrator
+├── install.sh
+└── uninstall.sh
 ```
 
 ## sample output (with token assumption)
@@ -307,5 +310,7 @@ ziyuegong@ziyues-MacBook-Air-2 ~ % claude
 Resume this session with:
 claude --resume 79292bd8-4ce7-4ce1-81e3-0b045e3b6d3c
 
+### cost
+cost for the above 2 commands is ~ 3 usd
 
 **Disclaimer:** For educational/research purposes only. Not financial advice.
