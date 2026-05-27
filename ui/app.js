@@ -1,59 +1,89 @@
 let currentChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Automatically fetch the latest report on load
-    autoLoadLatest();
+    // Initial fetch of the report list
+    refreshReportList();
 });
 
-async function autoLoadLatest() {
+async function refreshReportList() {
+    const reportList = document.getElementById('report-list');
     const statusEl = document.getElementById('file-status');
-    
-    // Check for the most specific file names produced by the tools
-    const targets = [
-        '../output/latest-report.md',
-        '../output/quick-portfolio-output.md',
-        '../output/backtest-output.md',
-        '../output/sample.md'
-    ];
 
-    for (const path of targets) {
-        try {
-            const response = await fetch(path);
-            if (response.ok) {
-                const rawMarkdown = await response.text();
-                statusEl.textContent = `Viewing: ${path.split('/').pop()}`;
-                processMarkdown(rawMarkdown);
-                return; // Stop at the first one found
-            }
-        } catch (e) {
-            console.error(`Skipping ${path}`);
+    try {
+        // Standard python http.server returns a directory listing as HTML when fetching a directory
+        const response = await fetch('../output/');
+        if (!response.ok) throw new Error("Could not list output/ folder.");
+        
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Extract all .md file links
+        const links = Array.from(doc.querySelectorAll('a'))
+            .map(a => a.getAttribute('href'))
+            .filter(href => href && href.endsWith('.md'))
+            .sort((a, b) => b.localeCompare(a)); // Newest sounding first by filename
+
+        if (links.length === 0) {
+            reportList.innerHTML = '<li class="empty-msg">No reports found.</li>';
+            return;
         }
+
+        reportList.innerHTML = '';
+        links.forEach(filename => {
+            const li = document.createElement('li');
+            li.textContent = filename.split('/').pop().replace(/%20/g, ' ');
+            li.className = 'report-item';
+            li.addEventListener('click', () => {
+                fetchReport('../output/' + filename);
+                document.querySelectorAll('#report-list li').forEach(el => el.classList.remove('active'));
+                li.classList.add('active');
+            });
+            reportList.appendChild(li);
+        });
+
+        // Auto-load the newest one
+        if (links[0]) {
+            fetchReport('../output/' + links[0]);
+            reportList.firstChild.classList.add('active');
+        }
+
+    } catch (error) {
+        console.error("Auto-load failed, falling back to static check.", error);
+        reportList.innerHTML = '<li class="empty-msg">Folder listing disabled. Add a report to output/.</li>';
     }
+}
+
+async function fetchReport(path) {
+    const statusEl = document.getElementById('file-status');
+    const filename = decodeURIComponent(path.split('/').pop());
     
-    statusEl.textContent = "No reports found in output/";
+    try {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error("Failed to load report.");
+        const markdown = await response.text();
+        statusEl.textContent = `Viewing: ${filename}`;
+        processMarkdown(markdown);
+    } catch (e) {
+        statusEl.textContent = "Error loading report: " + filename;
+    }
 }
 
 function processMarkdown(markdown) {
-    // Hide welcome state, show report view
     document.getElementById('welcome-state').classList.add('hidden');
     document.getElementById('report-view').classList.remove('hidden');
 
-    // 1. Render Markdown to HTML 
     const mdContainer = document.getElementById('markdown-container');
     mdContainer.innerHTML = marked.parse(markdown);
 
-    // 2. Build Table of Contents (Sections)
     buildTOC(mdContainer);
-
-    // 3. Extract data for charts
     attemptChartExtraction(markdown);
 }
 
 function buildTOC(container) {
     const toc = document.getElementById('toc');
-    toc.innerHTML = ''; // clear
+    toc.innerHTML = '';
 
-    // Find all H2 and H3 elements
     const headers = container.querySelectorAll('h2, h3');
     
     if (headers.length === 0) {
@@ -62,13 +92,11 @@ function buildTOC(container) {
     }
 
     headers.forEach((header, index) => {
-        // Assign an ID so we can scroll to it
         const id = `section-${index}`;
         header.id = id;
 
         const li = document.createElement('li');
         li.textContent = header.textContent;
-        // Indent H3s
         if (header.tagName.toLowerCase() === 'h3') {
             li.style.paddingLeft = '1rem';
             li.style.fontSize = '0.9em';
@@ -83,7 +111,6 @@ function buildTOC(container) {
 }
 
 function attemptChartExtraction(markdown) {
-    // Generic regex for matching "- Label: XX%" in any markdown context.
     const regex = /-\s+([a-zA-Z\s]+):\s+(\d+(?:\.\d+)?)%/g;
     
     let match;
@@ -98,19 +125,15 @@ function attemptChartExtraction(markdown) {
     const chartSection = document.getElementById('chart-section');
 
     if (labels.length > 0 && data.length > 0) {
-        // Show chart section
         chartSection.classList.remove('hidden');
         renderPieChart(labels, data);
     } else {
-        // Hide if no data found
         chartSection.classList.add('hidden');
     }
 }
 
 function renderPieChart(labels, data) {
     const ctx = document.getElementById('extractedChart').getContext('2d');
-
-    // Destroy existing chart to prevent overlap
     if (currentChart) {
         currentChart.destroy();
     }
@@ -122,14 +145,7 @@ function renderPieChart(labels, data) {
             datasets: [{
                 label: 'Allocation (%)',
                 data: data,
-                backgroundColor: [
-                    '#58a6ff', // blue
-                    '#3fb950', // green
-                    '#d29922', // orange/yellow
-                    '#f85149', // red
-                    '#a371f7', // purple
-                    '#8b949e', // grey
-                ],
+                backgroundColor: ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#a371f7', '#8b949e'],
                 borderColor: '#0d1117',
                 borderWidth: 2
             }]

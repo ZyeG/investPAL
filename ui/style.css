@@ -1,61 +1,35 @@
 :root {
-    --bg-color: #0d1117;
-    --panel-bg: #161b22;
-    --text-color: #c9d1d9;
-    --header-color: #f0f6fc;
+    --bg-dark: #0d1117;
+    --bg-sidebar: #161b22;
+    --text-main: #c9d1d9;
+    --text-muted: #8b949e;
     --accent: #58a6ff;
     --border: #30363d;
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+* { box-sizing: border-box; }
 
 body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    margin: 0;
     display: flex;
     flex-direction: column;
     height: 100vh;
 }
 
 header {
-    background-color: var(--panel-bg);
-    border-bottom: 1px solid var(--border);
+    background-color: var(--bg-sidebar);
     padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.logo {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--header-color);
-}
-
-button {
-    background-color: var(--border);
-    color: var(--text-color);
-    border: 1px solid var(--border);
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-button:hover {
-    background-color: var(--accent);
-    color: #ffffff;
-}
-
-input[type="file"] {
-    margin-left: 1rem;
-    color: var(--text-color);
-}
+.logo { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+.status { font-size: 0.9rem; color: var(--text-muted); }
 
 .container {
     display: flex;
@@ -64,75 +38,76 @@ input[type="file"] {
 }
 
 .sidebar {
-    width: 250px;
-    background-color: var(--panel-bg);
+    width: 300px;
+    background-color: var(--bg-sidebar);
     border-right: 1px solid var(--border);
-    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
 }
 
-.sidebar h3 {
-    margin-bottom: 1rem;
-    color: var(--header-color);
-}
-
-#toc {
-    list-style: none;
-}
-
-#toc li {
-    padding: 0.5rem 0;
-    cursor: pointer;
+.sidebar-section {
+    padding: 1rem;
     border-bottom: 1px solid var(--border);
-    color: var(--accent);
 }
 
-#toc li:hover {
-    text-decoration: underline;
+.sidebar h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
 }
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar li {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar li:hover { background-color: #21262d; }
+.sidebar li.active { background-color: #1f6feb; color: white; }
+.sidebar li.empty-msg { cursor: default; color: var(--text-muted); font-style: italic; }
 
 .content {
     flex: 1;
-    padding: 2rem;
+    padding: 2rem 4rem;
     overflow-y: auto;
 }
 
 .welcome-state {
     text-align: center;
-    margin-top: 10%;
-    color: #8b949e;
+    margin-top: 10vh;
+    color: var(--text-muted);
 }
 
-.hidden {
-    display: none !important;
-}
-
-#markdown-container h1, 
-#markdown-container h2, 
-#markdown-container h3 {
-    color: var(--header-color);
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.3rem;
-}
-
-#markdown-container p, #markdown-container ul {
-    margin-bottom: 1rem;
+#markdown-container {
+    max-width: 800px;
+    margin: 0 auto;
     line-height: 1.6;
 }
 
-#markdown-container ul {
-    padding-left: 2rem;
-}
+#markdown-container h1 { border-bottom: 1px solid var(--border); padding-bottom: .3em; }
+#markdown-container h2 { border-bottom: 1px solid var(--border); padding-bottom: .3em; margin-top: 24px; }
+#markdown-container blockquote { border-left: 0.25em solid var(--accent); color: var(--text-muted); padding: 0 1em; margin: 0; }
+#markdown-container table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+#markdown-container th, #markdown-container td { border: 1px solid var(--border); padding: 8px 12px; }
+#markdown-container th { background: #161b22; }
 
 .chart-container {
-    margin-top: 3rem;
-    padding-top: 2rem;
-    border-top: 2px dashed var(--border);
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
 }
 
-.chart-container h3 {
-    color: var(--header-color);
-    margin-bottom: 1rem;
-}
+.hidden { display: none; }

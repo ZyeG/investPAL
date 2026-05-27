@@ -13,16 +13,24 @@
 <body>
     <header>
         <div class="logo">investPAL UI</div>
-        <div class="status" id="file-status">Detecting latest report...</div>
+        <div class="status" id="file-status">Select a report from the sidebar</div>
     </header>
 
     <main class="container">
-        <!-- Sidebar for Table of Contents (Sections) -->
+        <!-- Sidebar for Report Selection and TOC -->
         <aside id="sidebar" class="sidebar">
-            <h3>Sections</h3>
-            <ul id="toc">
-                <li class="empty-msg">Load a report to see sections</li>
-            </ul>
+            <div class="sidebar-section">
+                <h3>Reports</h3>
+                <ul id="report-list">
+                    <li class="empty-msg">Scanning output/ folder...</li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Current Sections</h3>
+                <ul id="toc">
+                    <li class="empty-msg">Select a report to see sections</li>
+                </ul>
+            </div>
         </aside>
 
         <!-- Main Content Area -->
