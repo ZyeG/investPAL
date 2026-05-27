@@ -69,8 +69,7 @@ investPAL/
 ```
 
 ## sample output (with token assumption)
-### backtest
->>> /investpal backtest AAPL 2026-02-26
+**/investpal backtest AAPL 2026-02-26**
 ```
 Backtest Complete — AAPL from 2026-02-26
 
@@ -83,8 +82,8 @@ Backtest Complete — AAPL from 2026-02-26
   
   Report: /Users/ziyuegong/output/backtest-output.md
 ```
-### live action
->>> /investpal quick-portfolio AAPL
+**/investpal quick-portfolio AAPL**
+```
  Quick-Portfolio Complete — AAPL @ $308.82
 
   Bottom line: Composite Trade Score 64/100, signal HOLD (lean Trim) — wait for pullback. AAPL is at 98th
@@ -101,6 +100,7 @@ Backtest Complete — AAPL from 2026-02-26
   - Re-run with actual holdings to get a real portfolio health score (sector allocation, beta, concentration)
   - Compare AAPL head-to-head against another mega-cap (e.g., GOOGL, MSFT, NVDA) to see relative setup
   - Bear scenario: what does AAPL look like if WWDC disappoints and 10Y breaks above 4.7%
+```
 
 ### sample terminal session
 ziyuegong@ziyues-MacBook-Air-2 ~ % claude
