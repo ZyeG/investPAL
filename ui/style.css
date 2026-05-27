@@ -1,0 +1,138 @@
+:root {
+    --bg-color: #0d1117;
+    --panel-bg: #161b22;
+    --text-color: #c9d1d9;
+    --header-color: #f0f6fc;
+    --accent: #58a6ff;
+    --border: #30363d;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+header {
+    background-color: var(--panel-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--header-color);
+}
+
+button {
+    background-color: var(--border);
+    color: var(--text-color);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+button:hover {
+    background-color: var(--accent);
+    color: #ffffff;
+}
+
+input[type="file"] {
+    margin-left: 1rem;
+    color: var(--text-color);
+}
+
+.container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: var(--panel-bg);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.sidebar h3 {
+    margin-bottom: 1rem;
+    color: var(--header-color);
+}
+
+#toc {
+    list-style: none;
+}
+
+#toc li {
+    padding: 0.5rem 0;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
+}
+
+#toc li:hover {
+    text-decoration: underline;
+}
+
+.content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.welcome-state {
+    text-align: center;
+    margin-top: 10%;
+    color: #8b949e;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#markdown-container h1, 
+#markdown-container h2, 
+#markdown-container h3 {
+    color: var(--header-color);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.3rem;
+}
+
+#markdown-container p, #markdown-container ul {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+#markdown-container ul {
+    padding-left: 2rem;
+}
+
+.chart-container {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px dashed var(--border);
+}
+
+.chart-container h3 {
+    color: var(--header-color);
+    margin-bottom: 1rem;
+}

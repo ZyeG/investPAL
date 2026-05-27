@@ -30,7 +30,7 @@ Synthesize the historical agent outputs to compute the quick snapshot (Signal, B
 Compare the historical recommendation (BUY/HOLD/SELL/AVOID) vs the *actual* stock performance and market behavior from `PAST_DATE` to today. Validate if the strategy's prediction matched reality.
 
 ### Step 4 — Output Generation
-Output to `output/backtest-output.md` following this structure:
+Output to `output/backtest-output.md` following this structure exactly to ensure the Frontend UI can parse it:
 ```markdown
 # Backtest Report for <TICKER> (from <PAST_DATE>)
 
@@ -42,6 +42,10 @@ Output to `output/backtest-output.md` following this structure:
 
 ## Historical Portfolio Analysis
 [Portfolio metrics as of past date]
+
+### Sector Allocation
+- [Sector 1]: [XX]%
+- [Sector 2]: [XX]%
 
 ## Strategy Verification (Historical vs Current)
 - Predicted Signal: [Signal]

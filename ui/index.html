@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>investPAL - Report Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Marked.js for parsing Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Chart.js for rendering charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">investPAL UI</div>
+        <div class="status" id="file-status">Detecting latest report...</div>
+    </header>
+
+    <main class="container">
+        <!-- Sidebar for Table of Contents (Sections) -->
+        <aside id="sidebar" class="sidebar">
+            <h3>Sections</h3>
+            <ul id="toc">
+                <li class="empty-msg">Load a report to see sections</li>
+            </ul>
+        </aside>
+
+        <!-- Main Content Area -->
+        <section id="content" class="content">
+            <div id="welcome-state" class="welcome-state">
+                <h2>Welcome to the investPAL Viewer</h2>
+                <p>Select a markdown file (.md) from the <code>output/</code> directory, or load the Mock Data to preview the UI.</p>
+            </div>
+            
+            <div id="report-view" class="hidden">
+                <div id="markdown-container"></div>
+                
+                <div id="chart-section" class="hidden chart-container">
+                    <h3>Data Visualization Extracted From Report</h3>
+                    <div style="position: relative; height:400px; width:100%">
+                        <canvas id="extractedChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

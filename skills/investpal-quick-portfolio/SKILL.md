@@ -29,7 +29,7 @@ Launch the following 3 custom subagents in parallel using the `runSubagent` tool
 - **Portfolio Analyzer**: Analyze holdings for Sector Allocation, Geographic Exposure, Correlation, Concentration Risk, Beta/Delta, and Income. Determine Portfolio Health Score.
 
 ### Step 3 — Output Generation
-Output to `output/quick-portfolio-output.md` following this structure:
+Output to `output/quick-portfolio-output.md` following this structure exactly to ensure the Frontend UI can parse it:
 ```markdown
 # Quick-Portfolio Report
 
@@ -41,7 +41,11 @@ Output to `output/quick-portfolio-output.md` following this structure:
 [Include the quick snapshot details: Price, Factors, Signal, Thesis]
 
 ## Portfolio Analysis
-[Include sector allocation, beta, correlation matrix, concentration risk, income, recommendations]
+[Include beta, correlation matrix, concentration risk, income, recommendations]
+
+### Sector Allocation
+- [Sector 1]: [XX]%
+- [Sector 2]: [XX]%
 ```
 
 Finally, summarize briefly to the terminal that output has been directed to the markdown file.

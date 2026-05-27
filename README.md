@@ -314,3 +314,9 @@ claude --resume 79292bd8-4ce7-4ce1-81e3-0b045e3b6d3c
 cost for the above 2 commands is ~ 3 usd
 
 **Disclaimer:** For educational/research purposes only. Not financial advice.
+### Viewing the UI Dashboard
+We included a local Web Frontend to parse and visualize the Markdown outputs automatically.
+1. Open a terminal in the root of this project (`investPAL/`).
+2. Start a local server: `python3 -m http.server 8000`
+3. Open `http://localhost:8000/ui/` in your browser.
+4. The dashboard now contains native buttons calling "View Latest Quick-Portfolio" and "View Latest Backtest". Clicking these will fetch the generated reports directly from the `output/` directory, segmenting them into sections and plotting any Sector Allocations onto interactive charts without any manual uploading!
