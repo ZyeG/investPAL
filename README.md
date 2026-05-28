@@ -1,108 +1,101 @@
-# AI Trading Analyst (Modified)
+# InvestPAL: AI Trading Analyst
+investPAL is an multi-agent investment tool that automates professional analysis workflow.
+While standard human analysis forces repetitive manual work; and existing AI tools lack backtesting validation, and generates analysis too complex for everyday users to interpret effectively, investPAL orchestrates specialized quant-modeler, macro-economist, and behavioral-psychologist AI subagents in parallel to replicate institutional evaluation protocols, utilizes a dedicated historical backtesting engine to build measurable strategy confidence, and offers a dual user experience where a visual Web UI charts complex numeric data while an interactive CLI allows non-professionals to easily interpret long reports through natural-language chat.
 
-This project has been modified from its original 16-skill setup to a streamlined version focusing on core capabilities with added token logging and historical outcome tracking.
 
-## Changes Made
-1. **Custom Multi-Agent Framework**: Removed the original repo's generic agents (technical, fundamental, etc.) and implemented a brand new, specialized multi-agent architecture representing distinct financial personas: 
-   - `quant-modeler`
-   - `macro-economist`
-   - `behavioral-psychologist`
-2. **Simplified Skills**: Removed the previous suite of separated trading skills.
-3. **Combined `quick-portfolio` Skill**: Created a new single skill `investpal-quick-portfolio` that orchestrates the 3 custom subagents to generate a composite snapshot and robust portfolio analysis (sector allocation, diversification, beta).
-4. **New `backtest` Skill**: Added a new skill `investpal-backtest` to run historical data simulation. It orchestrates the 3 subagents forcing them to look only at past data relative to a given date (limited to a **max 12-month lookup window**) to form a thesis, then includes a verification phase comparing that historical recommendation against current actual market data.
-5. **Token Usage Logging**: Agents and skills log/print estimated token usage for each sub-command and search operation directly to the terminal.
-6. **Output Redirection**: Outputs are redirected into markdown files (`output/quick-portfolio-output.md` and `output/backtest-output.md`). No longer support pdf generation. 
+## Features
 
-## Skills
+This project supports two complementary user experiences — a readability-focused web UI for single-stock snapshots, and a full-featured CLI for interactive, production-style analysis (including backtests and portfolio runs).
 
-### `/investpal quick-portfolio <TICKER> [HOLDINGS]`
-Combines a specialized 3-agent stock assessment and full portfolio strategy evaluation.
-- Launches `quant-modeler`, `macro-economist`, and `behavioral-psychologist` in parallel.
-- Evaluates any provided holding distributions.
-- Prints execution token usage per command to terminal.
-- Outputs detailed report to `output/quick-portfolio-output.md`.
-- Concludes with an interactive Q&A step to discuss the findings and answer user questions.
+- **Web UI (single-stock current analysis)**
+  - Focused on clarity and readability: generated reports are parsed and rendered with clear sections (Quick Snapshot, Technicals, Fundamentals, Scenarios, Portfolio Impact, Token Usage).
+  - Markdown reports include numeric summaries and support visualizations (tables, inline charts/images when available) to make figures easy to scan.
+  - The UI currently supports analysis of a single stock at a time (current snapshot). It displays an easy-to-read parsed report and exposes a downloadable backtest `.md` when available.
+  - Designed for quick drill-down and comparison; reports are saved to `output/` so they can be re-opened or downloaded.
 
-### `/investpal backtest <TICKER> <PAST_DATE> [HOLDINGS]`
-A replica of `quick-portfolio` restricted to a `<PAST_DATE>` for historical simulation. 
-- Analyzes data strictly on or prior to the date using the 3 custom agents (restricted to **a max 12-month historical window** to save tokens).
-- Emits strategy signals conceptually from the past.
-- Analyzes actual outcome from `<PAST_DATE>` to today to verify accuracy.
-- Prints execution token usage per command to terminal.
-- Outputs detailed report to `output/backtest-output.md`.
-- Concludes with an interactive Q&A step to discuss the findings and answer user questions.
+- **Native CLI (terminal) — full workflow & interactivity**
+  - Supports both current snapshots and historical backtests for a single stock (`/investpal quick-portfolio` and `/investpal backtest`).
+  - Supports portfolio analyses: provide holdings as input (e.g. `AAPL 100, MSFT 50`) to run current and backtest evaluations across a portfolio.
+  - Includes a lightweight planning agent that decides which specialized skill(s) to run (current snapshot vs backtest vs portfolio flow) based on structured or natural-language input.
+  - Accepts natural language prompts (for example, "Backtest Tesla 6 months ago with my holdings") and performs interactive clarification if required (ticker typos, missing past-date, holdings details).
+  - After generating a markdown report the CLI can enter an interactive chat mode that lets you ask follow-ups, request deeper drills into specific sections, or re-run analyses with different parameters — all while referencing the generated report.
+
+- **Shared behavior & implementation notes**
+  - The system orchestrates three specialist subagents in parallel: `quant-modeler`, `macro-economist`, and `behavioral-psychologist` to form a composite view.
+  - Backtests are constrained to a sensible default window (12 months) to control token cost; this is configurable in the skill settings.
+  - All generated reports are written to `output/` (`quick-portfolio-output.md`, `backtest-output.md`) and are exposed to the web UI via download endpoints.
+  - Token usage and per-agent estimates are logged to the terminal for transparency.
+
+This split UX gives a low-friction visual experience for single-stock exploration in the browser, and a powerful, scriptable CLI experience for reproducible backtests, portfolio-level analysis, and interactive research workflows.
 
 ## How to Run
+### Command Line Interface
+## How to Run
 
-1. **Install Skills and Agents**: Run the install script to copy the custom agents and skills to your user configuration directory (e.g., `~/.claude/`):
-   ```bash
-   ./install.sh
-   ```
-2. **Setup Output Directory**: Ensure the output folder exists at `~/.claude/skills/investpal/output` to hold the generated reports:
-   ```bash
-   mkdir -p ~/.claude/skills/investpal/output
-   ```
-3. **Launch the Agent**: Start the Claude Code CLI (or your compatible AI agent extension like GitHub Copilot):
-   ```bash
-   claude
-   ```
-4. **Execute Commands**: Request the agent to trigger the trading skills:
-   - Example: `/investpal quick-portfolio AAPL`
-   - Example: `/investpal backtest AAPL 2026-02-26` (only support max 1 year backtest, due to token cost)
+**Prerequisites**
+- Node.js (v18+) to run the local server.
+- Claude Code CLI and a valid `ANTHROPIC_API_KEY` 
+- Docker & Docker Compose (optional) to run the bundled web UI.
 
-*(Note: If you want to remove the installed tools later, simply run `./uninstall.sh`)*
+**Web UI with Docker**
+1. Provide your API key via an `.env` file or environment variable. Create a `.env` next to `docker-compose.yml` containing:
+```ini
+ANTHROPIC_API_KEY=sk-REPLACE_WITH_YOUR_KEY
+```
+2. Build and run:
+```bash
+docker compose up -d --build
+```
+3. Visit the web UI at `http://localhost:3737`.
 
-## Project Structure
+**CLI (native Claude Code)**
+- Install the CLI and skills (one-time):
+```bash
+curl -fsSL https://raw.githubusercontent.com/ZyeG/investPAL/feature/frontend/install.sh | bash
+```
+- Examples:
+```bash
+# Quick current snapshot for a single ticker
+claude "/investpal quick-portfolio AAPL"
+
+# Backtest anchored to a past date (max 12 months by default)
+claude "/investpal backtest AAPL 2026-02-26"
+
+# Portfolio-run example (ticker + shares)
+claude "/investpal quick-portfolio AAPL 100, MSFT 50"
+```
+
+## Sample Output
+
+Below are concise example snippets showing the typical CLI output and where reports are written. These are summaries; full reports are saved as markdown in the `output/` folder.
+
+1) Web Interface
+**Search Bar**
+
+**Report Generation**
+
+**Report Generated**
+
+2) Backtest example (CLI)
 ```text
-investPAL/
-├── agents/
-│   ├── quant-modeler.md
-│   ├── macro-economist.md
-│   └── behavioral-psychologist.md
-├── skills/
-│   ├── investpal-quick-portfolio/SKILL.md   # Orchestrator (Snapshot + Portfolio)
-│   └── investpal-backtest/SKILL.md          # Historical Strategy Backtest
-├── investpal/
-│   └── SKILL.md                             # Master Orchestrator
-├── install.sh
-└── uninstall.sh
-```
-
-## sample output (with token assumption)
-**/investpal backtest AAPL 2026-02-26**
-```
 Backtest Complete — AAPL from 2026-02-26
 
-  Bottom line: The historical signal was HOLD with a contrarian lean-Buy on pullback (Composite Score
-  51/100). AAPL went from ~$268 to $308.82 = +15.2% in 3 months, with the March 30 pullback delivering the
-  exact "buy the dip" setup the strategy called for. Verdict: PARTIAL SUCCESS / B+ — direction right,
-  conviction slightly understated.
-  
-  Total token usage: ~65,200 tokens (3 subagents + synthesis + verification).
-  
-  Report: /Users/ziyuegong/output/backtest-output.md
-```
-**/investpal quick-portfolio AAPL**
-```
- Quick-Portfolio Complete — AAPL @ $308.82
-
-  Bottom line: Composite Trade Score 64/100, signal HOLD (lean Trim) — wait for pullback. AAPL is at 98th
-  percentile of its 52W range with RSI ~72 and PEG 3.0, heading into a binary WWDC June 8 catalyst. Sentiment
-   has rotated FEAR 38 → GREED 68 since Feb — the easy money from the contrarian-fear trade is gone; new
-  entries should wait for a pullback to ~$283 (50DMA) or a post-WWDC reaction.
-
-  Total token usage: ~79,100 tokens (3 subagents + synthesis).
-
-  Report: /Users/ziyuegong/output/quick-portfolio-output.md
-  
-  Want to go deeper on any of these?
-  - WWDC June 8 options strategy (straddle/strangle sizing for the binary event)
-  - Re-run with actual holdings to get a real portfolio health score (sector allocation, beta, concentration)
-  - Compare AAPL head-to-head against another mega-cap (e.g., GOOGL, MSFT, NVDA) to see relative setup
-  - Bear scenario: what does AAPL look like if WWDC disappoints and 10Y breaks above 4.7%
+Bottom line: Historical signal: HOLD (lean Buy on pullback). AAPL: $268 → $308.82 (+15.2% over 3 months).
+Total token usage: ~65,000 tokens (3 subagents + synthesis + verification).
+Report written to: output/backtest-output.md
 ```
 
-### sample terminal session
+3) Quick-portfolio example (CLI)
+```text
+Quick-Portfolio Complete — AAPL @ $308.82
+
+Bottom line: Composite Trade Score 64/100 — SIGNAL: HOLD (trim/await pullback).
+Total token usage: ~79,000 tokens (3 subagents + synthesis).
+Report written to: output/quick-portfolio-output.md
+```
+
+4) Complete CLI output
+```
 ziyuegong@ziyues-MacBook-Air-2 ~ % claude
 ╭─── Claude Code v2.1.150 ──────────────────────────────────────────────────────────────────────────────────╮
 │                                                    │ Tips for getting started                             │
@@ -307,10 +300,18 @@ ziyuegong@ziyues-MacBook-Air-2 ~ % claude
 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
   Press Ctrl-D again to exit
 
-Resume this session with:
-claude --resume 79292bd8-4ce7-4ce1-81e3-0b045e3b6d3c
+```
 
-### cost
-cost for the above 2 commands is ~ 3 usd
 
-**Disclaimer:** For educational/research purposes only. Not financial advice.
+## Acknowledgement
+The work is inspired from a public repo https://github.com/zubair-trabzada/ai-trading-claude, but with major changes as outlined below:
+1. **Custom Multi-Agent Framework**: Removed the original repo's generic agents (technical, fundamental, etc.) and implemented a brand new, specialized multi-agent architecture representing distinct financial personas: 
+   - `quant-modeler`
+   - `macro-economist`
+   - `behavioral-psychologist`
+2. **Simplified Skills**: Removed the previous suite of separated trading skills.
+3. **Combined `quick-portfolio` Skill**: Created a new single skill `investpal-quick-portfolio` that orchestrates the 3 custom subagents to generate a composite snapshot and robust portfolio analysis (sector allocation, diversification, beta).
+4. **New `backtest` Skill**: Added a new skill read SKILLS.md in  investpal-quick-portfolio and frontend/sserver.js; make sure in the SKILLS.md such that when the server tries to parse the markdown file, all the data required is present (all the variables in parseReport in server.js), for example, the company name, price, 52-week high, etc.`investpal-backtest` to run historical data simulation. It orchestrates the 3 subagents forcing them to look only at past data relative to a given date (limited to a **max 12-month lookup window**) to form a thesis, then includes a verification phase comparing that historical recommendation against current actual market data.
+5. **Token Usage Logging**: Agents and skills log/print estimated token usage for each sub-command and search operation directly to the terminal.
+6. **Output Redirection**: Outputs are redirected into markdown files (`output/quick-portfolio-output.md` and `output/backtest-output.md`). No longer support pdf generation. 
+7. **Web UI and Deployment**: Added a Web UI that parses generated markdown reports, renders them as structured HTML and plots inline charts/graphs for numeric sections. The Claude Code CLI is wrapped as a backend service (server spawns/processes `claude` commands), and the project now bundles the backend and frontend together with Docker for easy deployment and reproducible environments.
