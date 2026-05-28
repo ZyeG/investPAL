@@ -71,11 +71,11 @@ claude "/investpal quick-portfolio AAPL 100, MSFT 50"
 Below are concise example snippets showing the typical CLI output and where reports are written. These are summaries; full reports are saved as markdown in the `output/` folder.
 
 1) Web Interface
-**Search Bar**
+![Search Bar](img/searchbar.png)
 
-**Report Generation**
+![Report Generation](img/report generating.png)
 
-**Report Generated**
+![Report Generated](img/report generted.png)
 
 2) Backtest example (CLI)
 ```text
