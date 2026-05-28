@@ -73,9 +73,9 @@ Below are concise example snippets showing the typical CLI output and where repo
 1) Web Interface
 ![Search Bar](img/searchbar.png)
 
-![Report Generation](img/report generating.png)
+![Report Generation](img/report%20generating.png)
 
-![Report Generated](img/report generted.png)
+![Report Generated](img/report%20generted.png)
 
 2) Backtest example (CLI)
 ```text
