@@ -260,6 +260,20 @@ function runAnalysis(job) {
     // Make sure all bars are at 100%
     ['quant','macro','sent'].forEach(n => push(job, 'agent', { name:n, status:'done', progress:100 }));
 
+    // Fallback: if Claude couldn't write the file, salvage markdown from stdout.
+    if (!fs.existsSync(OUTPUT_FILE)) {
+      const reportStart = stdout.search(/^# Quick-Portfolio Report/m);
+      if (reportStart !== -1) {
+        const md = stdout.slice(reportStart).trim();
+        try {
+          fs.writeFileSync(OUTPUT_FILE, md + '\n', 'utf8');
+          console.log(`[${ticker}] Recovered report from stdout and wrote ${OUTPUT_FILE}`);
+        } catch (e) {
+          console.error(`[${ticker}] Failed to recover stdout report:`, e.message);
+        }
+      }
+    }
+
     // Try to read the output file
     let report = null;
     if (fs.existsSync(OUTPUT_FILE)) {
