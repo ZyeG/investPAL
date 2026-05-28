@@ -177,6 +177,9 @@ function findClaude() {
 function runAnalysis(job) {
   const { ticker } = job;
 
+  // Ensure output directory exists in all environments (host/docker).
+  try { fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true }); } catch (_) {}
+
   // Remove stale output
   try { fs.unlinkSync(OUTPUT_FILE); } catch (_) {}
 
@@ -274,10 +277,11 @@ function runAnalysis(job) {
       job.report = report;
       push(job, 'done', { report });
     } else {
+      const stdoutTail = (stdout || '').trim().split('\n').slice(-20).join('\n');
       job.status = 'error';
       job.error = code !== 0
         ? `claude exited with code ${code}. Check that the claude CLI is installed and authenticated.`
-        : `Output file not found at ${OUTPUT_FILE}. The skill may not have written its output.`;
+        : `Output file not found at ${OUTPUT_FILE}. The skill may not have written its output.\nRecent Claude output:\n${stdoutTail || '(no stdout captured)'}`;
       push(job, 'error', { message: job.error });
       console.error(`[${ticker}] Error:`, job.error);
     }

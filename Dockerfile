@@ -4,8 +4,8 @@ WORKDIR /app
 
 # Optional: install Claude CLI for real analysis mode.
 # If you do not need it, remove this line to slim the image.
-RUN npm install -g @anthropic-ai/claude-code
-
+# RUN npm install -g @anthropic-ai/claude-code
+RUN curl -fsSL https://claude.ai/install.sh | bash
 COPY agents ./agents
 COPY frontend ./frontend
 COPY investpal ./investpal
