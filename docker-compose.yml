@@ -1,0 +1,17 @@
+services:
+  investpal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: investpal
+    restart: unless-stopped
+    ports:
+      - "3737:3737"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3737"
+      # For Claude CLI usage inside container:
+      # ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+    volumes:
+      # Persist generated markdown reports
+      - ./output:/app/output

@@ -16,6 +16,7 @@ const { spawn, execSync } = require('child_process');
 const url     = require('url');
 
 const PORT        = parseInt(process.env.PORT || '3737', 10);
+const HOST        = process.env.HOST || '0.0.0.0';
 const ROOT        = path.resolve(__dirname, '..');
 const FRONTEND    = __dirname;
 const OUTPUT_FILE = path.join(ROOT, 'output', 'quick-portfolio-output.md');
@@ -379,7 +380,7 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, HOST, () => {
   console.log(`\n📈  InvestPAL Analysis Server`);
   console.log(`    http://localhost:${PORT}`);
   console.log(`    Project root: ${ROOT}`);
