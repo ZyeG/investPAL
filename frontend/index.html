@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InvestPAL — AI Trading Analyst</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #070b14;
+      --bg2:       #0c1120;
+      --card:      #0f1626;
+      --card2:     #131c2e;
+      --border:    #1b2840;
+      --border2:   #243251;
+      --text:      #e2e8f0;
+      --text2:     #94a3b8;
+      --text3:     #4a5d7a;
+      --green:     #10d9a0;
+      --green-dim: #0d6e52;
+      --red:       #f43f5e;
+      --red-dim:   #7a1a2d;
+      --amber:     #f59e0b;
+      --amber-dim: #7a4e08;
+      --blue:      #60a5fa;
+      --blue-dim:  #1e3a5f;
+      --purple:    #a78bfa;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+    #app { min-height: 100vh; }
+    .view { animation: fadeUp 0.3s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    @keyframes barFill { from { width:0%; } to { width:var(--to); } }
+    @keyframes shimmer { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+
+    /* ── SHARED HEADER ──────────────────────────────────── */
+    .hdr {
+      position:sticky; top:0; z-index:100;
+      background:rgba(7,11,20,0.94); backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+      height:60px; padding:0 24px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .logo { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:800; letter-spacing:-.5px; color:var(--text); text-decoration:none; cursor:pointer; }
+    .logo-icon { width:32px; height:32px; background:linear-gradient(135deg,#60a5fa,#a78bfa); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+    .logo span { color:var(--blue); }
+    .hdr-right { display:flex; align-items:center; gap:12px; }
+    .hdr-search { display:flex; align-items:center; gap:8px; background:var(--card2); border:1px solid var(--border2); border-radius:10px; padding:7px 14px; min-width:200px; }
+    .hdr-search input { background:none; border:none; outline:none; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; width:100%; letter-spacing:1px; }
+    .hdr-search input::placeholder { color:var(--text3); font-weight:400; letter-spacing:0; }
+    .hdr-btn { background:var(--blue); color:#000; font-size:12px; font-weight:700; border:none; border-radius:8px; padding:7px 14px; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
+    .hdr-btn:hover { opacity:.85; }
+    .hdr-date { font-size:12px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
+    .back-btn { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text2); background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:6px 14px; cursor:pointer; transition:all .15s; }
+    .back-btn:hover { color:var(--text); border-color:var(--border2); }
+
+    /* ── HOME HERO ──────────────────────────────────────── */
+    .home-hero {
+      background:linear-gradient(180deg,rgba(96,165,250,0.06) 0%,rgba(7,11,20,0) 100%);
+      border-bottom:1px solid var(--border);
+      padding:52px 24px 40px;
+      text-align:center;
+    }
+    .home-hero h1 { font-size:32px; font-weight:800; letter-spacing:-.8px; margin-bottom:8px; }
+    .home-hero h1 span { color:var(--blue); }
+    .home-hero p { font-size:14px; color:var(--text2); margin-bottom:28px; }
+    .home-hero p b { color:var(--purple); font-weight:500; }
+    .search-bar {
+      display:flex; align-items:center; gap:0;
+      max-width:560px; margin:0 auto;
+      background:var(--card); border:1.5px solid var(--border2);
+      border-radius:14px; overflow:hidden;
+      box-shadow:0 0 40px rgba(96,165,250,0.08);
+      transition:border-color .2s;
+    }
+    .search-bar:focus-within { border-color:var(--blue); }
+    .search-bar input {
+      flex:1; background:none; border:none; outline:none;
+      color:var(--text); font-family:'JetBrains Mono',monospace;
+      font-size:18px; font-weight:600; letter-spacing:2px;
+      padding:16px 20px; text-transform:uppercase;
+    }
+    .search-bar input::placeholder { color:var(--text3); font-weight:400; letter-spacing:0.5px; font-size:15px; text-transform:none; }
+    .search-btn {
+      background:var(--blue); color:#000; font-size:14px; font-weight:700;
+      border:none; padding:16px 28px; cursor:pointer; transition:opacity .15s;
+      white-space:nowrap;
+    }
+    .search-btn:hover { opacity:.85; }
+    .search-btn:disabled { opacity:.4; cursor:default; }
+    .agents-badge { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; flex-wrap:wrap; }
+    .agent-chip { display:inline-flex; align-items:center; gap:5px; background:var(--card2); border:1px solid var(--border); border-radius:100px; padding:4px 12px; font-size:11px; color:var(--text3); }
+    .agent-chip span { font-weight:600; }
+
+    /* ── REPORTS GRID ───────────────────────────────────── */
+    .reports-section { max-width:1200px; margin:0 auto; padding:32px 24px; }
+    .reports-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .reports-title { font-size:14px; font-weight:600; color:var(--text2); }
+    .reports-title b { color:var(--text); }
+    .reports-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+    .report-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:20px;
+      display:flex; flex-direction:column; gap:14px;
+      cursor:pointer; transition:all .18s;
+      position:relative; overflow:hidden;
+    }
+    .report-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+    .report-card.processing { cursor:default; }
+    .report-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,transparent 60%,rgba(96,165,250,0.04)); pointer-events:none; }
+    .card-top { display:flex; align-items:flex-start; justify-content:space-between; }
+    .card-ticker { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; color:var(--blue); letter-spacing:.5px; }
+    .card-exchange { font-size:11px; color:var(--text3); margin-top:1px; }
+    .card-del { width:24px; height:24px; border:none; background:none; color:var(--text3); cursor:pointer; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all .15s; flex-shrink:0; }
+    .card-del:hover { background:var(--red-dim); color:var(--red); }
+    .card-company { font-size:12px; color:var(--text2); line-height:1.4; }
+    .card-score-block { text-align:center; padding:4px 0; }
+    .card-score-num { font-size:44px; font-weight:800; font-family:'JetBrains Mono',monospace; line-height:1; }
+    .card-score-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+    .card-signal { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; padding:6px 14px; border-radius:8px; border:1px solid; }
+    .card-signal.buy        { background:rgba(16,217,160,0.1);  color:var(--green);  border-color:var(--green-dim); }
+    .card-signal.hold-plus  { background:rgba(245,158,11,0.1);  color:var(--amber);  border-color:var(--amber-dim); }
+    .card-signal.hold       { background:rgba(96,165,250,0.1);  color:var(--blue);   border-color:var(--blue-dim);  }
+    .card-signal.sell       { background:rgba(244,63,94,0.1);   color:var(--red);    border-color:var(--red-dim);   }
+    .card-signal.avoid      { background:rgba(244,63,94,0.1);   color:var(--red);    border-color:var(--red-dim);   }
+    .card-signal.strong-buy { background:rgba(16,217,160,0.1);  color:var(--green);  border-color:var(--green-dim); }
+    .card-signal.processing { background:rgba(167,139,250,0.1); color:var(--purple); border-color:rgba(167,139,250,0.3); }
+    .card-meta { display:flex; justify-content:space-between; font-size:11px; }
+    .card-meta-price { font-family:'JetBrains Mono',monospace; font-weight:600; }
+    .card-meta-date { color:var(--text3); }
+    .card-status { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; }
+    .status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+    .status-dot.generated  { background:var(--green); }
+    .status-dot.processing { background:var(--amber); animation:pulse 1.2s infinite; }
+    .status-dot.failed     { background:var(--red); }
+    .card-view-btn { display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; font-weight:600; color:var(--blue); padding-top:4px; border-top:1px solid var(--border); }
+    .card-progress-bar { height:4px; background:var(--bg2); border-radius:2px; overflow:hidden; margin-top:2px; }
+    .card-progress-fill { height:100%; background:linear-gradient(90deg,var(--purple),var(--blue)); border-radius:2px; animation:shimmer 1.5s infinite linear; background-size:200%; }
+
+    /* ── EMPTY STATE ────────────────────────────────────── */
+    .empty-state { text-align:center; padding:64px 24px; color:var(--text3); }
+    .empty-state h3 { font-size:16px; font-weight:600; color:var(--text2); margin-bottom:8px; }
+    .empty-state p { font-size:13px; }
+
+    /* ── LOADING OVERLAY ────────────────────────────────── */
+    .loading-overlay {
+      position:fixed; inset:0; z-index:200;
+      background:rgba(7,11,20,0.96); backdrop-filter:blur(8px);
+      display:flex; align-items:center; justify-content:center;
+      animation:fadeUp .3s ease;
+    }
+    .loading-box {
+      background:var(--card); border:1px solid var(--border2);
+      border-radius:20px; padding:36px 40px;
+      width:100%; max-width:520px; margin:16px;
+    }
+    .loading-ticker { font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--blue); letter-spacing:2px; }
+    .loading-company { font-size:13px; color:var(--text2); margin-top:2px; margin-bottom:24px; }
+    .loading-stage-msg { font-size:13px; color:var(--text2); margin-bottom:20px; min-height:20px; }
+    .loading-stage-msg b { color:var(--text); }
+    .agent-row { display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .agent-row:last-of-type { border-bottom:none; }
+    .agent-row-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+    .agent-row-info { flex:1; min-width:0; }
+    .agent-row-name { font-size:12px; font-weight:600; font-family:'JetBrains Mono',monospace; }
+    .agent-row-sub { font-size:10px; color:var(--text3); margin-top:1px; }
+    .agent-row-bar { height:5px; background:var(--bg2); border-radius:3px; overflow:hidden; margin-top:6px; }
+    .agent-row-fill { height:100%; border-radius:3px; width:0%; transition:width .1s linear; }
+    .agent-row-status { font-size:11px; font-family:'JetBrains Mono',monospace; flex-shrink:0; min-width:52px; text-align:right; }
+    .spinner { width:16px; height:16px; border:2px solid var(--border2); border-top-color:var(--blue); border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
+    .loading-tokens { margin-top:20px; padding:12px 16px; background:var(--bg2); border-radius:10px; }
+    .loading-tokens-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; margin-bottom:4px; }
+    .loading-tokens-val { font-size:18px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--text); }
+    .loading-tokens-total { font-size:11px; color:var(--text3); }
+    .loading-done-msg { margin-top:20px; padding:14px 16px; background:rgba(16,217,160,0.08); border:1px solid rgba(16,217,160,0.2); border-radius:10px; font-size:13px; color:var(--green); display:none; }
+    .view-report-btn { display:block; width:100%; margin-top:12px; background:var(--green); color:#000; font-size:14px; font-weight:700; border:none; border-radius:10px; padding:13px; cursor:pointer; transition:opacity .15s; display:none; }
+    .view-report-btn:hover { opacity:.85; }
+
+    /* ── REPORT VIEW ────────────────────────────────────── */
+    .rpt-wrap { max-width:1400px; margin:0 auto; padding:24px; }
+    .rpt-hero {
+      display:grid; grid-template-columns:auto 1fr auto;
+      gap:20px; align-items:center;
+      background:linear-gradient(135deg,#0f1626,#131c2e);
+      border:1px solid var(--border2); border-radius:16px;
+      padding:24px 28px; margin-bottom:24px;
+    }
+    .rpt-ticker-name { font-size:34px; font-weight:800; letter-spacing:-1px; font-family:'JetBrains Mono',monospace; color:var(--blue); line-height:1; }
+    .rpt-company { font-size:13px; color:var(--text2); margin-top:4px; }
+    .rpt-meta-row { display:flex; gap:24px; margin-top:14px; }
+    .rpt-meta-item label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; display:block; }
+    .rpt-meta-item span { font-size:13px; font-weight:600; font-family:'JetBrains Mono',monospace; }
+    .rpt-price-block { padding-left:28px; border-left:1px solid var(--border); }
+    .rpt-price-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+    .rpt-price { font-size:38px; font-weight:700; font-family:'JetBrains Mono',monospace; letter-spacing:-1px; line-height:1; }
+    .badge-change { font-size:12px; font-weight:600; font-family:'JetBrains Mono',monospace; padding:3px 9px; border-radius:6px; }
+    .badge-change.up   { background:rgba(16,217,160,0.15); color:var(--green); border:1px solid var(--green-dim); }
+    .badge-change.down { background:rgba(244,63,94,0.15);  color:var(--red);   border:1px solid var(--red-dim); }
+    .levels-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .level-chip { display:inline-flex; align-items:center; gap:5px; background:var(--card2); border:1px solid var(--border2); border-radius:7px; padding:5px 10px; font-size:11px; }
+    .level-chip .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .level-chip .val { font-family:'JetBrains Mono',monospace; font-weight:600; }
+    .level-chip .lbl { color:var(--text3); }
+    .rpt-signal-block { display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .sig-badge { font-size:20px; font-weight:800; padding:10px 22px; border-radius:12px; border:2px solid; text-align:center; }
+    .sig-badge.buy        { background:rgba(16,217,160,0.1);  color:var(--green);  border-color:var(--green-dim); }
+    .sig-badge.hold-plus  { background:rgba(245,158,11,0.1);  color:var(--amber);  border-color:var(--amber-dim); }
+    .sig-badge.hold       { background:rgba(96,165,250,0.1);  color:var(--blue);   border-color:var(--blue-dim); }
+    .sig-badge.sell       { background:rgba(244,63,94,0.1);   color:var(--red);    border-color:var(--red-dim); }
+    .sig-badge.avoid      { background:rgba(244,63,94,0.1);   color:var(--red);    border-color:var(--red-dim); }
+    .sig-badge.strong-buy { background:rgba(16,217,160,0.1);  color:var(--green);  border-color:var(--green-dim); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; }
+    .card-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text3); margin-bottom:14px; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+    .three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:20px; }
+    .span2 { grid-column:span 2; }
+    .chart-h260 { position:relative; height:260px; }
+    .chart-h200 { position:relative; height:200px; }
+    .chart-h300 { position:relative; height:300px; }
+    .chart-h220 { position:relative; height:220px; }
+    .section-label { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:12px; }
+    .mt20 { margin-top:20px; }
+    .mt24 { margin-top:24px; }
+    .mb20 { margin-bottom:20px; }
+    .mb24 { margin-bottom:24px; }
+    .agent-scores { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+    .agent-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .agent-card.composite { background:linear-gradient(135deg,rgba(96,165,250,0.07),rgba(167,139,250,0.07)); border-color:var(--border2); }
+    .agent-name-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text3); text-align:center; }
+    .gauge-wrap { position:relative; width:96px; height:96px; }
+    .gauge-wrap canvas { width:96px !important; height:96px !important; }
+    .gauge-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .gauge-num { font-size:21px; font-weight:700; font-family:'JetBrains Mono',monospace; line-height:1; }
+    .gauge-denom { font-size:9px; color:var(--text3); }
+    .metrics-tbl { width:100%; border-collapse:collapse; }
+    .metrics-tbl tr { border-bottom:1px solid var(--border); }
+    .metrics-tbl tr:last-child { border-bottom:none; }
+    .metrics-tbl td { padding:8px 0; font-size:12px; }
+    .metrics-tbl td:first-child { color:var(--text2); }
+    .metrics-tbl td:nth-child(2) { font-family:'JetBrains Mono',monospace; font-weight:600; text-align:right; }
+    .metrics-tbl td:nth-child(3) { text-align:right; padding-left:10px; }
+    .pill { display:inline-flex; align-items:center; padding:2px 7px; border-radius:100px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+    .pill.g { background:rgba(16,217,160,0.13); color:var(--green); }
+    .pill.r { background:rgba(244,63,94,0.13);  color:var(--red); }
+    .pill.a { background:rgba(245,158,11,0.13); color:var(--amber); }
+    .factors-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
+    .factor-list { list-style:none; display:flex; flex-direction:column; gap:8px; }
+    .factor-item { display:flex; gap:10px; padding:10px; border-radius:9px; font-size:12px; line-height:1.5; }
+    .factor-item.bull { background:rgba(16,217,160,0.05); border:1px solid rgba(16,217,160,0.14); }
+    .factor-item.bear { background:rgba(244,63,94,0.05);  border:1px solid rgba(244,63,94,0.14); }
+    .factor-icon { font-size:13px; flex-shrink:0; margin-top:1px; }
+    .factor-title { font-weight:600; color:var(--text); }
+    .factor-desc  { color:var(--text2); font-size:11px; margin-top:1px; }
+    .scenario-row { display:grid; grid-template-columns:72px 1fr 70px 110px; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+    .scenario-row:last-child { border-bottom:none; }
+    .scenario-lbl { font-size:12px; font-weight:700; }
+    .scenario-bar-bg { height:7px; background:var(--bg2); border-radius:4px; overflow:hidden; }
+    .scenario-bar-fill { height:100%; border-radius:4px; }
+    .scenario-pct { font-size:12px; font-family:'JetBrains Mono',monospace; font-weight:600; text-align:right; }
+    .scenario-tgt { font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--text2); text-align:right; }
+    .verdict { background:linear-gradient(135deg,rgba(245,158,11,0.05),rgba(96,165,250,0.05)); border:1px solid rgba(245,158,11,0.2); border-radius:16px; padding:26px; margin-bottom:24px; }
+    .verdict-header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:18px; }
+    .verdict-title { font-size:18px; font-weight:800; letter-spacing:-.4px; }
+    .verdict-thesis { font-size:12px; color:var(--text2); margin-top:5px; max-width:600px; line-height:1.6; }
+    .verdict-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+    .verdict-item label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; display:block; }
+    .verdict-item span { font-size:15px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+    .verdict-action { background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.18); border-radius:9px; padding:13px 16px; font-size:12px; color:var(--text2); line-height:1.6; }
+    .token-tbl { width:100%; border-collapse:collapse; }
+    .token-tbl th { text-align:left; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text3); padding:7px 0; border-bottom:1px solid var(--border); }
+    .token-tbl td { padding:9px 0; font-size:12px; border-bottom:1px solid var(--border); }
+    .token-tbl tr:last-child td { border-bottom:none; font-weight:700; }
+    .token-tbl td:last-child { text-align:right; font-family:'JetBrains Mono',monospace; }
+    .score-strip { display:flex; height:6px; border-radius:4px; overflow:hidden; margin:8px 0; }
+    .rsi-track { height:18px; background:var(--bg2); border-radius:9px; overflow:hidden; position:relative; margin-top:10px; }
+    .footer { border-top:1px solid var(--border); padding:18px 24px; max-width:1400px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+    .footer-brand { font-size:12px; font-weight:700; color:var(--text3); }
+    .footer-brand span { color:var(--blue); }
+    .footer-note { font-size:10px; color:var(--text3); text-align:right; line-height:1.5; }
+    .disclaimer { background:linear-gradient(90deg,rgba(167,139,250,0.07),rgba(96,165,250,0.07)); border-bottom:1px solid rgba(167,139,250,0.18); padding:7px 24px; font-size:11px; color:var(--text3); text-align:center; }
+    .disclaimer b { color:var(--amber); }
+    @media(max-width:900px) {
+      .rpt-hero { grid-template-columns:1fr; }
+      .rpt-price-block { padding-left:0; border-left:none; border-top:1px solid var(--border); padding-top:16px; }
+      .agent-scores { grid-template-columns:repeat(2,1fr); }
+      .two-col,.three-col,.factors-grid { grid-template-columns:1fr; }
+      .verdict-grid { grid-template-columns:1fr 1fr; }
+      .span2 { grid-column:auto; }
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ── CONSTANTS ──────────────────────────────────────────────── */
+const COMPANIES = {
+  AAPL:'Apple Inc.','NVDA':'NVIDIA Corporation','TSLA':'Tesla, Inc.','MSFT':'Microsoft Corporation',
+  GOOGL:'Alphabet Inc.',META:'Meta Platforms',AMZN:'Amazon.com, Inc.',SPY:'SPDR S&P 500 ETF',
+  QQQ:'Invesco QQQ Trust',NFLX:'Netflix, Inc.',AMD:'Advanced Micro Devices',INTC:'Intel Corporation',
+  BRK:'Berkshire Hathaway','JPM':'JPMorgan Chase','BAC':'Bank of America','XOM':'ExxonMobil Corp',
+  JNJ:'Johnson & Johnson','V':'Visa Inc.','MA':'Mastercard Inc.','DIS':'The Walt Disney Co.',
+  PLTR:'Palantir Technologies',COIN:'Coinbase Global',ABNB:'Airbnb Inc.',UBER:'Uber Technologies',
+  BABA:'Alibaba Group','TSM':'Taiwan Semiconductor','ARM':'Arm Holdings','SMCI':'Super Micro Computer',
+  MSTR:'MicroStrategy','HOOD':'Robinhood Markets',
+};
+const SIGNALS = { 'AVOID':'avoid','SELL':'sell','HOLD':'hold','HOLD+':'hold-plus','BUY':'buy','STRONG BUY':'strong-buy' };
+const SIGNAL_EMOJIS = { 'AVOID':'🔴','SELL':'🟠','HOLD':'🔵','HOLD+':'🟡','BUY':'🟢','STRONG BUY':'✅' };
+const EXCHANGES = { AAPL:'NASDAQ',NVDA:'NASDAQ',TSLA:'NASDAQ',MSFT:'NASDAQ',GOOGL:'NASDAQ',META:'NASDAQ',AMZN:'NASDAQ',SPY:'NYSE Arca',QQQ:'NASDAQ',NFLX:'NASDAQ',AMD:'NASDAQ',INTC:'NASDAQ',JPM:'NYSE',BAC:'NYSE',V:'NYSE',MA:'NYSE',XOM:'NYSE' };
+
+/* ── PRE-SEEDED DATA ────────────────────────────────────────── */
+const PRESETS = {
+AAPL: {
+  ticker:'AAPL', company:'Apple Inc.', exchange:'NASDAQ', type:'Stock',
+  price:308.65, change:2.14, marketCap:'$4.7T', beta:0.96, iv30d:19.7, divYield:0.41,
+  scores:{quant:68,macro:54,sentiment:62,composite:62},
+  signal:'HOLD+', ma50:282.81, ma200:267.67, support:282.57, resistance:311.82, rsi:68.2,
+  pe:37.3, forwardPe:34.0, peg:3.02, ps:8.69, pfcf:29.9, evEbitda:28.0,
+  revenueGrowth:12.8, epsGrowth:28.7, q2Growth:17.0, fcfGrowth:18.2,
+  grossMargin:47.9, opMargin:32.6, netMargin:27.0, fcfMargin:34.5,
+  de:1.03, currentRatio:1.07,
+  geo:{us:41,china:18,europe:24,japan:8,restAsia:9},
+  portfolioScore:65, maxDrawdown:-37.3, sharpe:0.85,
+  scenarios:{
+    bull:{prob:30,target:'$340–$380',thesis:'WWDC AI beats — upgrade supercycle triggered'},
+    base:{prob:45,target:'$295–$315',thesis:'WWDC in-line — solid execution, range-bound'},
+    bear:{prob:25,target:'$270–$290',thesis:'WWDC disappoints — crowded long unwinds'},
+  },
+  catalyst:'WWDC — June 8', catalystDays:12,
+  thesis:'Apple is a world-class compounder trading at a premium multiple, with genuine AI/Services tailwinds partially offset by macro headwinds, regulatory pressure, and crowded bullish positioning ahead of a binary WWDC catalyst.',
+  bulls:[
+    {icon:'🤖',title:'AI & Services Flywheel',desc:'Services hit $31B in Q2 FY26 (+16% YoY) at ~75% gross margin. WWDC Siri 2.0 potential upgrade supercycle.'},
+    {icon:'📊',title:'Q2 FY26 Beat',desc:'Revenue $111.2B (+17% YoY), EPS $2.01 vs $1.94 est. Fundamentals accelerating, not decelerating.'},
+    {icon:'💰',title:'FCF Engine — $129B TTM',desc:'$100B buyback + 4% dividend raise. ~2.25% buyback yield reduces share count.'},
+    {icon:'📈',title:'Technical Uptrend Intact',desc:'9.1% above 50-DMA, 15.3% above 200-DMA. Both MAs upward-sloping.'},
+    {icon:'💱',title:'Weaker USD Tailwind',desc:'~60% international revenue benefits from weakening DXY. 2–4% FX tailwind to H2 2026 EPS.'},
+    {icon:'🎯',title:'K-Shaped Consumer Protection',desc:'Core demographic (high-income households) insulated from inflation and spending slowdowns.'},
+    {icon:'📉',title:'Balance Sheet Improvement',desc:'D/E improved from 1.37 → 1.03. Current ratio recovered to 1.07.'},
+  ],
+  bears:[
+    {icon:'💸',title:'Valuation Stretched',desc:'P/E 37.3x (41% above 10-yr median), PEG 3.02. Limited margin of safety.'},
+    {icon:'🌐',title:'Macro Headwinds',desc:'Stagflationary env. (3.8% CPI + 3.5–3.75% Fed funds) pressures demand AND compresses multiples.'},
+    {icon:'⚖️',title:'Regulatory Battle',desc:'EU DMA (€500M fine), US DOJ antitrust, Supreme Court App Store. Services 75% margins are the target.'},
+    {icon:'🇨🇳',title:'China Dual Risk',desc:'17–20% revenue + deep supply chain. US-China tariffs and Huawei competition are structural risks.'},
+    {icon:'🔄',title:'Great Rotation Headwind',desc:'Institutional capital rotating to Industrials/Energy/Small-Cap. AAPL YTD +10.1% vs QQQ +16.5%.'},
+    {icon:'🎲',title:'WWDC Binary Risk',desc:'Crowd 100% positioned for AI home run (put/call 0.30). Disappointment → mean reversion $280–$290.'},
+    {icon:'📱',title:'iPhone Revenue Misses',desc:'2 consecutive quarters missing estimates raises structural questions on hardware cycle duration.'},
+  ],
+  consensusLow:310, consensusHigh:318,
+  tokens:{quant:22000,macro:26000,sentiment:26000,orchestrator:4000,total:78000},
+  priceStart:245, analyzedAt:'2026-05-27',
+},
+NVDA: {
+  ticker:'NVDA', company:'NVIDIA Corporation', exchange:'NASDAQ', type:'Stock',
+  price:1058.40, change:3.42, marketCap:'$2.6T', beta:1.65, iv30d:38.2, divYield:0.04,
+  scores:{quant:82,macro:71,sentiment:80,composite:78},
+  signal:'BUY', ma50:962.30, ma200:845.80, support:960.00, resistance:1100.00, rsi:62.8,
+  pe:45.2, forwardPe:32.1, peg:0.68, ps:22.4, pfcf:36.5, evEbitda:42.0,
+  revenueGrowth:69.0, epsGrowth:152.0, q2Growth:71.0, fcfGrowth:89.0,
+  grossMargin:73.2, opMargin:55.1, netMargin:48.6, fcfMargin:52.3,
+  de:0.42, currentRatio:4.17,
+  geo:{us:47,china:16,europe:18,japan:8,restAsia:11},
+  portfolioScore:72, maxDrawdown:-42.1, sharpe:1.24,
+  scenarios:{
+    bull:{prob:40,target:'$1,250–$1,450',thesis:'Blackwell ramp exceeds estimates, datacenter TAM expansion'},
+    base:{prob:40,target:'$950–$1,100',thesis:'Strong execution, digestion period after parabolic run'},
+    bear:{prob:20,target:'$750–$850',thesis:'China export restrictions escalate, competitive response'},
+  },
+  catalyst:'Q3 Earnings — Aug 2026', catalystDays:75,
+  thesis:'NVIDIA is the infrastructure layer of the AI economy at 73% gross margins with a 1-2 year competitive moat on Blackwell. Valuation is elevated but justified by 150%+ EPS growth and strong FCF conversion.',
+  bulls:[
+    {icon:'🏗️',title:'AI Infrastructure Monopoly',desc:'Blackwell architecture is 4x faster than H100. Datacenter revenue: $46.5B TTM (+122% YoY).'},
+    {icon:'📈',title:'Explosive Revenue Growth',desc:'Revenue +69% YoY, EPS +152% YoY. $96B in orders for next 12 months.'},
+    {icon:'💰',title:'Margin Expansion Story',desc:'Gross margins expanding: 73.2% vs 64.6% 3 years ago. Operating leverage accelerating.'},
+    {icon:'🔗',title:'CUDA Moat',desc:'12-year CUDA ecosystem makes switching costs near-prohibitive. 3M+ developers locked in.'},
+    {icon:'🌐',title:'Sovereign AI Demand',desc:'Governments ordering AI infrastructure: UK, France, Japan, India all announced multi-billion orders.'},
+    {icon:'🤝',title:'Hyperscaler Dependency',desc:'AWS, Azure, GCP all prioritizing NVDA chips. $40B+ committed capex from FAANG in H2 2026.'},
+  ],
+  bears:[
+    {icon:'🇨🇳',title:'China Export Controls',desc:'Section 122 restrictions limit China sales to H20 chip. ~14% revenue risk if escalated further.'},
+    {icon:'💸',title:'Extreme Valuation',desc:'P/E 45x, P/S 22x. Any earnings guidance miss = violent multiple compression.'},
+    {icon:'⚔️',title:'AMD & Custom Silicon',desc:'AMD MI300X gaining traction. Google TPU, AWS Trainium represent $20B+ annual TAM leakage.'},
+    {icon:'⏳',title:'Blackwell Supply Constraint',desc:'TSMC CoWoS packaging bottleneck limits Blackwell shipments in H1 2026.'},
+    {icon:'📊',title:'Hyped Positioning',desc:'Hedge fund crowding at all-time highs. Any rotation trigger = disproportionate selling.'},
+  ],
+  consensusLow:1050, consensusHigh:1350,
+  tokens:{quant:24000,macro:28000,sentiment:27000,orchestrator:4500,total:83500},
+  priceStart:867, analyzedAt:'2026-05-26',
+},
+SPY: {
+  ticker:'SPY', company:'SPDR S&P 500 ETF Trust', exchange:'NYSE Arca', type:'ETF',
+  price:594.20, change:-0.42, marketCap:'$582B AUM', beta:1.00, iv30d:14.8, divYield:1.31,
+  scores:{quant:60,macro:52,sentiment:56,composite:56},
+  signal:'HOLD', ma50:573.40, ma200:548.90, support:572.00, resistance:610.00, rsi:57.4,
+  pe:22.4, forwardPe:20.8, peg:1.92, ps:2.76, pfcf:18.5, evEbitda:16.2,
+  revenueGrowth:8.2, epsGrowth:11.4, q2Growth:9.1, fcfGrowth:10.5,
+  grossMargin:28.6, opMargin:19.2, netMargin:14.8, fcfMargin:22.1,
+  de:1.24, currentRatio:1.32,
+  geo:{us:100,china:0,europe:0,japan:0,restAsia:0},
+  portfolioScore:61, maxDrawdown:-18.9, sharpe:0.91,
+  scenarios:{
+    bull:{prob:35,target:'$640–$680',thesis:'Fed pivots dovish, earnings acceleration, multiple expansion'},
+    base:{prob:45,target:'$580–$620',thesis:'Soft landing, moderate earnings growth, range-bound'},
+    bear:{prob:20,target:'$520–$550',thesis:'Recession risk materializes, earnings contraction, -15% drawdown'},
+  },
+  catalyst:'June FOMC — Jun 18', catalystDays:22,
+  thesis:'SPY provides broad US equity exposure at a premium 22x P/E. Mixed macro environment — strong corporate earnings offset by restrictive monetary policy and geopolitical risk. A core portfolio holding with moderate near-term upside.',
+  bulls:[
+    {icon:'📊',title:'Earnings Resilience',desc:'S&P 500 EPS growth 11.4% YoY. Corporate margins holding despite cost pressures.'},
+    {icon:'💼',title:'Sector Diversification',desc:'Exposure to all 11 GICS sectors. Tech 29%, Healthcare 13%, Financials 12%.'},
+    {icon:'📉',title:'Declining Inflation',desc:'CPI at 3.8% trending down. Fed tightening cycle nearing end — potential rate cut in Q4 2026.'},
+    {icon:'💰',title:'Corporate Balance Sheet Strength',desc:'S&P 500 companies hold $4.1T in cash. Buyback yield ~2.1% provides floor under equities.'},
+    {icon:'🏦',title:'Financial Sector Tailwinds',desc:'Net interest margins expanding. Regional bank stress resolved. Financials +18% YTD.'},
+  ],
+  bears:[
+    {icon:'💸',title:'Elevated Valuations',desc:'P/E 22x above 20-year historical average of 18x. Limited upside without earnings acceleration.'},
+    {icon:'🏛️',title:'Fed Policy Uncertainty',desc:'Fed funds at 3.5–3.75%. Higher-for-longer compresses forward multiples.'},
+    {icon:'🌐',title:'Geopolitical Risks',desc:'US-China trade tensions, Middle East instability create tail risk.'},
+    {icon:'🔄',title:'Concentration Risk',desc:'Top 10 holdings = 32% of index. Heavy tech concentration creates QQQ correlation.'},
+    {icon:'📉',title:'Consumer Slowdown Signals',desc:'Credit card delinquencies at 10-year highs. Consumer discretionary spending declining.'},
+  ],
+  consensusLow:595, consensusHigh:650,
+  tokens:{quant:18000,macro:22000,sentiment:20000,orchestrator:3500,total:63500},
+  priceStart:517, analyzedAt:'2026-05-25',
+},
+};
+
+/* ── STATE ──────────────────────────────────────────────────── */
+const S = {
+  view: 'home',       // 'home' | 'report'
+  reports: [],
+  activeReport: null,
+  isAnalyzing: false,
+  loadingTicker: '',
+  loadingStage: 0,    // 0-6
+  loadingTokens: 0,
+};
+
+/* ── STORAGE ────────────────────────────────────────────────── */
+function loadReports() {
+  try { S.reports = JSON.parse(localStorage.getItem('investpal_reports') || '[]'); } catch(e) { S.reports = []; }
+  if (!S.reports.length) {
+    S.reports = [
+      { ...PRESETS.AAPL,  id: 'AAPL-seed',  status: 'generated' },
+      { ...PRESETS.NVDA,  id: 'NVDA-seed',  status: 'generated' },
+      { ...PRESETS.SPY,   id: 'SPY-seed',   status: 'generated' },
+    ];
+    saveReports();
+  }
+}
+function saveReports() {
+  localStorage.setItem('investpal_reports', JSON.stringify(S.reports));
+}
+
+/* ── MOCK GENERATOR ─────────────────────────────────────────── */
+function hashStr(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+  return Math.abs(h);
+}
+function seeded(seed, min, max) {
+  const r = (Math.sin(seed * 9301 + 49297) * 233280 % 1 + 1) % 1;
+  return min + r * (max - min);
+}
+function generateReport(ticker) {
+  if (PRESETS[ticker]) return { ...PRESETS[ticker], id: ticker + '-' + Date.now(), status: 'generated', analyzedAt: new Date().toISOString().slice(0,10) };
+  const h = hashStr(ticker);
+  const r = (n, a, b) => Math.round(seeded(h + n, a, b) * 10) / 10;
+  const ri = (n, a, b) => Math.round(seeded(h + n, a, b));
+  const score = ri(1, 35, 88);
+  const signals = ['AVOID','SELL','HOLD','HOLD+','BUY','BUY','STRONG BUY'];
+  const sig = score < 30 ? 'AVOID' : score < 46 ? 'SELL' : score < 61 ? 'HOLD' : score < 76 ? 'HOLD+' : score < 91 ? 'BUY' : 'STRONG BUY';
+  const price = r(2, 20, 800);
+  return {
+    ticker, id: ticker+'-'+Date.now(), status:'generated',
+    company: COMPANIES[ticker] || ticker + ' Corp.',
+    exchange: EXCHANGES[ticker] || 'NASDAQ',
+    type: 'Stock',
+    price, change: r(3,-3,4),
+    marketCap: price > 500 ? '$' + r(4,1,10)+'T' : '$' + r(4,10,900)+'B',
+    beta: r(5,0.4,2.2), iv30d: r(6,12,65), divYield: r(7,0,4),
+    scores:{ quant: ri(8,35,90), macro: ri(9,30,80), sentiment: ri(10,30,85), composite: score },
+    signal: sig,
+    ma50: price * r(11,0.88,0.97), ma200: price * r(12,0.78,0.92),
+    support: price * r(13,0.88,0.95), resistance: price * r(14,1.03,1.15),
+    rsi: r(15,28,78),
+    pe: r(16,10,60), forwardPe: r(17,9,50), peg: r(18,0.3,3.8),
+    ps: r(19,1,25), pfcf: r(20,10,50), evEbitda: r(21,8,45),
+    revenueGrowth: r(22,2,80), epsGrowth: r(23,5,120), q2Growth: r(24,3,90), fcfGrowth: r(25,1,60),
+    grossMargin: r(26,20,75), opMargin: r(27,8,55), netMargin: r(28,5,50), fcfMargin: r(29,5,50),
+    de: r(30,0.1,2.5), currentRatio: r(31,0.8,5),
+    geo:{ us: ri(32,30,80), china: ri(33,5,20), europe: ri(34,8,25), japan: ri(35,3,12), restAsia: ri(36,3,15) },
+    portfolioScore: ri(37,45,80), maxDrawdown: -r(38,10,55), sharpe: r(39,0.3,1.8),
+    scenarios:{
+      bull:{ prob:ri(40,25,45), target:'$'+r(41,price*1.15,price*1.5).toFixed(0)+'–$'+r(42,price*1.4,price*1.8).toFixed(0), thesis:'Continued execution, catalyst beat' },
+      base:{ prob:ri(43,35,50), target:'$'+r(44,price*0.95,price*1.05).toFixed(0)+'–$'+r(45,price*1.02,price*1.12).toFixed(0), thesis:'In-line results, range consolidation' },
+      bear:{ prob:ri(46,15,30), target:'$'+r(47,price*0.7,price*0.88).toFixed(0)+'–$'+r(48,price*0.8,price*0.94).toFixed(0), thesis:'Macro headwinds, multiple compression' },
+    },
+    catalyst:'Next Earnings', catalystDays: ri(49,10,90),
+    thesis:`${COMPANIES[ticker]||ticker} is a compelling investment opportunity with a composite AI score of ${score}/100. ${score>60?'Positive momentum and fundamentals support the thesis.':'Caution warranted given current macro environment.'}`,
+    bulls:[
+      {icon:'📈',title:'Positive Momentum',desc:'Price above key moving averages with favorable technical setup.'},
+      {icon:'💰',title:'Strong Cash Generation',desc:'FCF margin demonstrates efficient capital allocation and balance sheet strength.'},
+      {icon:'🌐',title:'Market Position',desc:'Established competitive position with defensible market share in core segments.'},
+    ],
+    bears:[
+      {icon:'💸',title:'Valuation Risk',desc:'Current multiples assume continued execution. Any miss may trigger multiple compression.'},
+      {icon:'🌐',title:'Macro Sensitivity',desc:'Rising rates and geopolitical uncertainty create headwinds for risk assets.'},
+      {icon:'⚔️',title:'Competitive Pressure',desc:'Increasing competition in core markets may pressure margins over the medium term.'},
+    ],
+    consensusLow: price * r(50, 0.98, 1.02), consensusHigh: price * r(51, 1.05, 1.25),
+    tokens:{ quant:ri(52,18000,26000), macro:ri(53,20000,28000), sentiment:ri(54,19000,27000), orchestrator:ri(55,3500,5000), total:ri(56,65000,90000) },
+    priceStart: price * r(57, 0.7, 0.9),
+    analyzedAt: new Date().toISOString().slice(0,10),
+  };
+}
+
+/* ── CHART INSTANCES ────────────────────────────────────────── */
+const CHARTS = {};
+function makeChart(id, cfg) {
+  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
+  const el = document.getElementById(id);
+  if (!el) return;
+  CHARTS[id] = new Chart(el, cfg);
+  return CHARTS[id];
+}
+function destroyCharts() {
+  Object.values(CHARTS).forEach(c => { try { c.destroy(); } catch(e){} });
+  Object.keys(CHARTS).forEach(k => delete CHARTS[k]);
+}
+
+/* ── NAVIGATE ───────────────────────────────────────────────── */
+function navigate(view, data) {
+  if (view !== 'report') destroyCharts();
+  S.view = view;
+  if (view === 'report') {
+    if (data) S.activeReport = data;
+  }
+  render();
+  if (view === 'report') setTimeout(() => initCharts(S.activeReport), 60);
+  window.scrollTo(0,0);
+}
+
+/* ── SIGNAL HELPERS ─────────────────────────────────────────── */
+function sigClass(sig) { return SIGNALS[sig] || 'hold'; }
+function sigEmoji(sig) { return SIGNAL_EMOJIS[sig] || '🔵'; }
+function scoreColor(n) { return n<30?'#f43f5e':n<46?'#f97316':n<61?'#60a5fa':n<76?'#f59e0b':n<91?'#22c55e':'#10d9a0'; }
+function fmtChange(v) { const u=v>=0; return `<span class="badge-change ${u?'up':'down'}">${u?'+':''}${v.toFixed(2)}%</span>`; }
+
+/* ── HOME VIEW ──────────────────────────────────────────────── */
+function renderHome() {
+  const cards = S.reports.length
+    ? S.reports.map(r => {
+        if (r.status === 'processing') return `
+          <div class="report-card processing" data-id="${r.id}">
+            <div class="card-top">
+              <div><div class="card-ticker">${r.ticker}</div><div class="card-exchange">${r.exchange||'NASDAQ'} · ${r.type||'Stock'}</div></div>
+              <button class="card-del" onclick="deleteReport('${r.id}',event)" title="Remove">✕</button>
+            </div>
+            <div class="card-company">${r.company}</div>
+            <div style="text-align:center;padding:12px 0;">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px;">Analyzing…</div>
+              <div class="card-progress-bar"><div class="card-progress-fill"></div></div>
+            </div>
+            <div class="card-signal processing"><span class="spinner"></span> Processing</div>
+            <div class="card-meta"><span class="card-meta-date">${r.analyzedAt}</span></div>
+            <div class="card-status"><span class="status-dot processing"></span><span style="color:var(--purple)">In Progress</span></div>
+          </div>`;
+        const sc = r.scores.composite;
+        return `
+          <div class="report-card" onclick="openReport('${r.id}')" data-id="${r.id}">
+            <div class="card-top">
+              <div><div class="card-ticker">${r.ticker}</div><div class="card-exchange">${r.exchange||'NASDAQ'} · ${r.type||'Stock'}</div></div>
+              <button class="card-del" onclick="deleteReport('${r.id}',event)" title="Remove">✕</button>
+            </div>
+            <div class="card-company">${r.company}</div>
+            <div class="card-score-block">
+              <div class="card-score-num" style="color:${scoreColor(sc)}">${sc}</div>
+              <div class="card-score-label">Composite Score</div>
+            </div>
+            <div><span class="card-signal ${sigClass(r.signal)}">${sigEmoji(r.signal)} ${r.signal}</span></div>
+            <div class="card-meta">
+              <span class="card-meta-price">$${r.price.toFixed(2)}</span>
+              <span class="card-meta-date">${r.analyzedAt}</span>
+            </div>
+            <div class="card-status">
+              <span class="status-dot generated"></span>
+              <span style="color:var(--green)">Generated</span>
+            </div>
+            <div class="card-view-btn">View Report →</div>
+          </div>`;
+      }).join('')
+    : `<div class="empty-state" style="grid-column:1/-1">
+        <h3>No reports yet</h3>
+        <p>Search for a ticker above to run your first AI analysis.</p>
+      </div>`;
+
+  return `
+    <div class="view">
+      <header class="hdr">
+        <div class="logo"><div class="logo-icon">📈</div>Invest<span>PAL</span></div>
+        <div class="hdr-right">
+          <span class="hdr-date">2026-05-27</span>
+          <span style="font-size:11px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;">AI Trading Analyst</span>
+        </div>
+      </header>
+      <div class="home-hero">
+        <h1>Analyze any stock or ETF with <span>AI</span></h1>
+        <p>Powered by <b>quant-modeler</b> · <b>macro-economist</b> · <b>behavioral-psychologist</b></p>
+        <div class="search-bar">
+          <input id="mainSearch" type="text" placeholder="Enter ticker: AAPL, NVDA, SPY, TSLA…" autocomplete="off" autocorrect="off" spellcheck="false" />
+          <button class="search-btn" id="analyzeBtn" onclick="handleAnalyze()">Analyze →</button>
+        </div>
+        <div class="agents-badge">
+          <span class="agent-chip" style="color:#60a5fa;"><span>📐</span> quant-modeler · 40%</span>
+          <span class="agent-chip" style="color:#10d9a0;"><span>🌍</span> macro-economist · 30%</span>
+          <span class="agent-chip" style="color:#a78bfa;"><span>🧠</span> behavioral-psychologist · 30%</span>
+        </div>
+      </div>
+      <div class="reports-section">
+        <div class="reports-header">
+          <div class="reports-title"><b>${S.reports.length}</b> Report${S.reports.length!==1?'s':''}</div>
+        </div>
+        <div class="reports-grid">${cards}</div>
+      </div>
+      <div class="footer" style="margin-top:20px;">
+        <div class="footer-brand">Invest<span>PAL</span></div>
+        <div class="footer-note">For educational & research purposes only. Not financial advice.</div>
+      </div>
+    </div>`;
+}
+
+/* ── LOADING OVERLAY ────────────────────────────────────────── */
+function renderLoadingOverlay() {
+  const t = S.loadingTicker;
+  const company = COMPANIES[t] || t + ' Corp.';
+  return `
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-box">
+        <div class="loading-ticker">${t}</div>
+        <div class="loading-company">${company}</div>
+        <div class="loading-stage-msg" id="loadingMsg"><b>Initializing orchestrator…</b></div>
+        <div id="agentRows">
+          <div class="agent-row" id="ar-quant">
+            <div class="agent-row-icon" style="background:rgba(96,165,250,0.12);">📐</div>
+            <div class="agent-row-info">
+              <div class="agent-row-name" style="color:#60a5fa;">quant-modeler</div>
+              <div class="agent-row-sub">Valuation · Technicals · Volatility</div>
+              <div class="agent-row-bar"><div class="agent-row-fill" id="bar-quant" style="background:#60a5fa;"></div></div>
+            </div>
+            <div class="agent-row-status" id="st-quant" style="color:var(--text3);">Pending</div>
+          </div>
+          <div class="agent-row" id="ar-macro">
+            <div class="agent-row-icon" style="background:rgba(16,217,160,0.12);">🌍</div>
+            <div class="agent-row-info">
+              <div class="agent-row-name" style="color:#10d9a0;">macro-economist</div>
+              <div class="agent-row-sub">Rates · Sector Flow · Positioning</div>
+              <div class="agent-row-bar"><div class="agent-row-fill" id="bar-macro" style="background:#10d9a0;"></div></div>
+            </div>
+            <div class="agent-row-status" id="st-macro" style="color:var(--text3);">Pending</div>
+          </div>
+          <div class="agent-row" id="ar-sent">
+            <div class="agent-row-icon" style="background:rgba(167,139,250,0.12);">🧠</div>
+            <div class="agent-row-info">
+              <div class="agent-row-name" style="color:#a78bfa;">behavioral-psychologist</div>
+              <div class="agent-row-sub">Sentiment · Social · Contrarian</div>
+              <div class="agent-row-bar"><div class="agent-row-fill" id="bar-sent" style="background:#a78bfa;"></div></div>
+            </div>
+            <div class="agent-row-status" id="st-sent" style="color:var(--text3);">Pending</div>
+          </div>
+        </div>
+        <div class="loading-tokens">
+          <div class="loading-tokens-label">Tokens consumed</div>
+          <div><span class="loading-tokens-val" id="tokenCount">0</span> <span class="loading-tokens-total">/ ~78,000</span></div>
+        </div>
+        <div class="loading-done-msg" id="doneMsg"></div>
+        <button class="view-report-btn" id="viewReportBtn">View Report →</button>
+      </div>
+    </div>`;
+}
+
+/* ── ANALYSIS FLOW ──────────────────────────────────────────── */
+let _pendingReport = null;
+let _tokenInterval = null;
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ── Loading UI helpers (shared by real + fallback paths) ─────── */
+function showLoadingOverlay() {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = renderLoadingOverlay();
+  document.body.appendChild(wrap.firstElementChild);
+}
+const _ui = {
+  msg:    html  => { const el=document.getElementById('loadingMsg');  if(el) el.innerHTML=html; },
+  status: (id,html,col) => { const el=document.getElementById('st-'+id); if(el){ el.innerHTML=html; el.style.color=col||''; } },
+  bar:    (id,pct) => { const el=document.getElementById('bar-'+id); if(el) el.style.width=Math.min(100,pct)+'%'; },
+  token:  n => { const el=document.getElementById('tokenCount'); if(el) el.textContent=Math.round(n).toLocaleString(); },
+  done:   (report) => {
+    const doneEl = document.getElementById('doneMsg');
+    const viewBtn = document.getElementById('viewReportBtn');
+    if(doneEl){ doneEl.style.display='block'; doneEl.textContent=`✓ Report generated — Score: ${report.scores.composite}/100 · Signal: ${report.signal}`; }
+    if(viewBtn){ viewBtn.style.display='block'; viewBtn.onclick=()=>{ clearInterval(_tokenInterval); S.isAnalyzing=false; const ov=document.getElementById('loadingOverlay'); if(ov) ov.remove(); navigate('report',report); }; }
+  },
+};
+
+/* ── REAL analysis via server.js ─────────────────────────────── */
+const API_BASE = 'http://localhost:3737';
+
+async function analyzeWithServer(ticker, placeholderId) {
+  // Start the job
+  const resp = await fetch(`${API_BASE}/api/analyze`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ ticker }),
+  });
+  if (!resp.ok) throw new Error(await resp.text());
+  const { jobId } = await resp.json();
+
+  // Connect to SSE progress stream
+  return new Promise((resolve, reject) => {
+    const es = new EventSource(`${API_BASE}/api/stream/${jobId}`);
+    const agentPct = { quant:0, macro:0, sent:0 };
+
+    _ui.msg('<b>Launching 3 agents in parallel…</b>');
+    ['quant','macro','sent'].forEach(n => _ui.status(n,'<span class="spinner"></span>',''));
+
+    es.addEventListener('status', e => {
+      const { message } = JSON.parse(e.data);
+      _ui.msg(`<b>${message}</b>`);
+    });
+
+    es.addEventListener('agent', e => {
+      const { name, status, progress } = JSON.parse(e.data);
+      if (progress !== undefined) { agentPct[name] = progress; _ui.bar(name, progress); }
+      if (status === 'running') _ui.status(name,'<span class="spinner"></span>','');
+      if (status === 'done')   { agentPct[name]=100; _ui.bar(name,100); _ui.status(name,'✓ Done','#10d9a0'); }
+    });
+
+    es.addEventListener('agent_tick', e => {
+      const { name } = JSON.parse(e.data);
+      agentPct[name] = Math.min(92, (agentPct[name]||0) + 5);
+      _ui.bar(name, agentPct[name]);
+      _ui.token(Object.values(agentPct).reduce((a,b)=>a+b,0)/300 * 74000);
+    });
+
+    es.addEventListener('ping', () => {
+      _ui.token(Object.values(agentPct).reduce((a,b)=>a+b,0)/300 * 74000);
+    });
+
+    es.addEventListener('done', e => {
+      es.close();
+      const { report } = JSON.parse(e.data);
+      report.id = placeholderId; report.status = 'generated';
+      _ui.token(report.tokens?.total || 78000);
+      ['quant','macro','sent'].forEach(n => { _ui.bar(n,100); _ui.status(n,'✓ Done','#10d9a0'); });
+      _ui.msg('<b>Report generated!</b>');
+      resolve(report);
+    });
+
+    es.addEventListener('error', e => {
+      es.close();
+      let msg = 'Analysis failed';
+      try { msg = JSON.parse(e.data).message; } catch(_) {}
+      reject(new Error(msg));
+    });
+
+    es.onerror = () => {
+      // SSE connection dropped — fall through to reject so we use mock
+      es.close();
+      reject(new Error('SSE connection dropped'));
+    };
+  });
+}
+
+/* ── MOCK fallback (when server not running) ─────────────────── */
+async function analyzeWithMock(ticker, placeholderId) {
+  let targetTokens = 0;
+  _tokenInterval = setInterval(() => {
+    const el=document.getElementById('tokenCount');
+    if(!el){ clearInterval(_tokenInterval); return; }
+    if(S.loadingTokens < targetTokens){ S.loadingTokens=Math.min(targetTokens,S.loadingTokens+Math.ceil((targetTokens-S.loadingTokens)/8+180)); _ui.token(S.loadingTokens); }
+  }, 80);
+
+  _ui.msg('<b>Launching 3 agents in parallel… <span style="color:var(--amber);font-size:10px;">(demo mode — start server.js for real AI)</span></b>');
+  ['quant','macro','sent'].forEach(n => _ui.status(n,'<span class="spinner"></span>',''));
+
+  const animBar = (id, ms) => {
+    const t0 = Date.now();
+    const tick = () => { const p=Math.min(100,((Date.now()-t0)/ms)*100); _ui.bar(id,p); if(p<100) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  };
+  targetTokens = 22000; animBar('quant',2200); animBar('macro',2800); animBar('sent',3200);
+  await sleep(2300); targetTokens=48000; _ui.bar('quant',100); _ui.status('quant','✓ Done','#10d9a0');
+  await sleep(600);  targetTokens=74000; _ui.bar('macro',100); _ui.status('macro','✓ Done','#10d9a0');
+  await sleep(500);  _ui.bar('sent',100);  _ui.status('sent','✓ Done','#10d9a0');
+  _ui.msg('<b>Synthesizing results from 3 agents…</b>'); await sleep(700);
+  const report = generateReport(ticker);
+  report.id = placeholderId; report.status = 'generated';
+  targetTokens = report.tokens.total;
+  _ui.msg('<b>Generating report…</b>'); await sleep(400);
+  return report;
+}
+
+/* ── MAIN entry point ────────────────────────────────────────── */
+async function analyzeStock(ticker) {
+  ticker = ticker.trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');
+  if (!ticker || ticker.length > 7) { alert('Please enter a valid ticker (e.g. AAPL, NVDA, SPY).'); return; }
+
+  S.isAnalyzing = true;
+  S.loadingTicker = ticker;
+  S.loadingTokens = 0;
+  _pendingReport = null;
+
+  // Add processing placeholder to reports grid
+  const placeholderId = ticker + '-' + Date.now();
+  S.reports.unshift({ id:placeholderId, ticker, company:COMPANIES[ticker]||ticker+' Corp.', exchange:EXCHANGES[ticker]||'NASDAQ', type:'Stock', status:'processing', analyzedAt:new Date().toISOString().slice(0,10), scores:{composite:0}, signal:'HOLD', price:0, change:0 });
+  saveReports();
+  render();
+  showLoadingOverlay();
+
+  let report;
+  try {
+    // Try real server first
+    report = await analyzeWithServer(ticker, placeholderId);
+  } catch (serverErr) {
+    console.info(`Server unavailable (${serverErr.message}), using demo mode.`);
+    // Clear token interval from a failed server attempt
+    clearInterval(_tokenInterval);
+    S.loadingTokens = 0;
+    try {
+      report = await analyzeWithMock(ticker, placeholderId);
+    } catch (mockErr) {
+      S.isAnalyzing = false;
+      S.reports = S.reports.filter(r => r.id !== placeholderId);
+      saveReports();
+      const ov = document.getElementById('loadingOverlay');
+      if (ov) ov.remove();
+      render();
+      return;
+    }
+  }
+
+  // Save report and show "View Report" button
+  const idx = S.reports.findIndex(r => r.id === placeholderId);
+  if (idx !== -1) { S.reports[idx] = report; saveReports(); }
+  _pendingReport = report;
+  _ui.done(report);
+}
+
+function dismissLoading() {
+  clearInterval(_tokenInterval);
+  S.isAnalyzing = false;
+  const ov = document.getElementById('loadingOverlay');
+  if (ov) ov.remove();
+  S.reports = S.reports.filter(r => r.status !== 'processing' || (r.id && _pendingReport && r.id === _pendingReport.id));
+  render();
+}
+
+/* ── REPORT HTML ────────────────────────────────────────────── */
+function renderReport(r) {
+  const sc = r.scores;
+  const priceTxt = r.price ? `$${r.price.toFixed(2)}` : '—';
+  const updn = r.change >= 0 ? 'up' : 'down';
+  const pct = r.change >= 0 ? `+${r.change.toFixed(2)}%` : `${r.change.toFixed(2)}%`;
+  const geoTot = Object.values(r.geo||{us:100}).reduce((a,b)=>a+b,0);
+
+  const factors = (list, cls) => list.map(f => `
+    <li class="factor-item ${cls}">
+      <span class="factor-icon">${f.icon}</span>
+      <div><div class="factor-title">${f.title}</div><div class="factor-desc">${f.desc}</div></div>
+    </li>`).join('');
+
+  return `
+    <div class="view">
+      <header class="hdr">
+        <button class="back-btn" onclick="navigate('home')">← Reports</button>
+        <div class="logo" onclick="navigate('home')"><div class="logo-icon">📈</div>Invest<span>PAL</span></div>
+        <div class="hdr-right">
+          <div class="hdr-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a5d7a" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="hdrSearchInput" placeholder="New ticker…" autocomplete="off" spellcheck="false" />
+          </div>
+          <button class="hdr-btn" onclick="handleHdrAnalyze()">Analyze →</button>
+        </div>
+      </header>
+      <div class="disclaimer"><b>DISCLAIMER:</b> For educational and research purposes only. This is NOT financial advice.</div>
+
+      <div class="rpt-wrap">
+        <!-- HERO -->
+        <div class="rpt-hero">
+          <div>
+            <div class="rpt-ticker-name">${r.ticker}</div>
+            <div class="rpt-company">${r.company} · ${r.exchange}</div>
+            <div class="rpt-meta-row">
+              <div class="rpt-meta-item"><label>Market Cap</label><span>${r.marketCap||'—'}</span></div>
+              <div class="rpt-meta-item"><label>Beta</label><span>${r.beta||'—'}</span></div>
+              <div class="rpt-meta-item"><label>IV 30D</label><span>${r.iv30d||'—'}%</span></div>
+              <div class="rpt-meta-item"><label>Div Yield</label><span>${r.divYield||'0'}%</span></div>
+            </div>
+          </div>
+          <div class="rpt-price-block">
+            <div class="rpt-price-label">Last Price</div>
+            <div class="rpt-price">${priceTxt}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+              <span class="badge-change ${updn}">${pct}</span>
+              <span style="font-size:11px;color:var(--text3);">Today</span>
+            </div>
+            <div class="levels-row">
+              <span class="level-chip"><span class="dot" style="background:#60a5fa;"></span><span class="lbl">50-DMA</span><span class="val">$${r.ma50.toFixed(2)}</span></span>
+              <span class="level-chip"><span class="dot" style="background:#a78bfa;"></span><span class="lbl">200-DMA</span><span class="val">$${r.ma200.toFixed(2)}</span></span>
+              <span class="level-chip"><span class="dot" style="background:#10d9a0;"></span><span class="lbl">Support</span><span class="val">$${r.support.toFixed(2)}</span></span>
+              <span class="level-chip"><span class="dot" style="background:#f43f5e;"></span><span class="lbl">Resist.</span><span class="val">$${r.resistance.toFixed(2)}</span></span>
+            </div>
+          </div>
+          <div class="rpt-signal-block">
+            <div class="sig-badge ${sigClass(r.signal)}">${sigEmoji(r.signal)} ${r.signal}</div>
+            <div style="font-size:11px;color:var(--text3);text-align:center;max-width:140px;line-height:1.5;">Analyzed ${r.analyzedAt}</div>
+            ${r.catalyst ? `<div style="text-align:center;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;">Key Catalyst</div><div style="font-size:12px;font-weight:600;color:var(--amber);">${r.catalyst}</div></div>` : ''}
+          </div>
+        </div>
+
+        <!-- AGENT GAUGES -->
+        <div class="section-label">Sub-Agent Score Breakdown</div>
+        <div class="agent-scores">
+          <div class="agent-card">
+            <div class="agent-name-label">Quant Modeler</div>
+            <div class="gauge-wrap"><canvas id="r-g-quant"></canvas>
+              <div class="gauge-center"><div class="gauge-num" style="color:#60a5fa;">${sc.quant}</div><div class="gauge-denom">/ 100</div></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);">Weight 40%</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-name-label">Macro Economist</div>
+            <div class="gauge-wrap"><canvas id="r-g-macro"></canvas>
+              <div class="gauge-center"><div class="gauge-num" style="color:#f59e0b;">${sc.macro}</div><div class="gauge-denom">/ 100</div></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);">Weight 30%</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-name-label">Behavioral Psychologist</div>
+            <div class="gauge-wrap"><canvas id="r-g-sent"></canvas>
+              <div class="gauge-center"><div class="gauge-num" style="color:#10d9a0;">${sc.sentiment}</div><div class="gauge-denom">/ 100</div></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);">Weight 30%</div>
+          </div>
+          <div class="agent-card composite">
+            <div class="agent-name-label" style="color:var(--blue);">Composite Score</div>
+            <div class="gauge-wrap"><canvas id="r-g-comp"></canvas>
+              <div class="gauge-center"><div class="gauge-num" style="color:${scoreColor(sc.composite)};font-size:24px;">${sc.composite}</div><div class="gauge-denom">/ 100</div></div>
+            </div>
+            <div style="font-size:10px;color:${scoreColor(sc.composite)};font-weight:700;">${r.signal} Zone</div>
+          </div>
+        </div>
+
+        <!-- SCORE SCALE -->
+        <div class="card mb24">
+          <div class="card-title">Signal Interpretation Scale</div>
+          <div class="score-strip">
+            <div style="flex:1;background:#f43f5e;"></div><div style="flex:1;background:#f97316;"></div>
+            <div style="flex:1;background:#f59e0b;"></div><div style="flex:0.7;background:#eab308;"></div>
+            <div style="flex:1;background:#22c55e;"></div><div style="flex:0.6;background:#10d9a0;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            ${[['0–30','AVOID','#f43f5e'],['31–45','SELL','#f97316'],['46–60','HOLD','#f59e0b'],['61–75','HOLD+','#eab308'],['76–90','BUY','#22c55e'],['91–100','STRONG BUY','#10d9a0']].map(([rng,lbl,col])=>`<div style="text-align:center;flex:1;"><div style="font-size:10px;color:${col};font-weight:700;">${rng}</div><div style="font-size:10px;color:var(--text3);">${lbl}</div></div>`).join('')}
+          </div>
+          <div style="position:relative;margin-top:6px;height:20px;">
+            <div style="position:absolute;left:calc(${sc.composite}% - 1px);top:0;width:2px;height:14px;background:white;border-radius:2px;"></div>
+            <div style="position:absolute;left:calc(${sc.composite}% - 24px);top:16px;background:${scoreColor(sc.composite)};color:#000;font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;white-space:nowrap;">${sc.composite} ←</div>
+          </div>
+        </div>
+
+        <!-- PRICE CHART -->
+        <div class="card mb24">
+          <div class="card-title">Price Action — 90 Day View</div>
+          <div class="chart-h300"><canvas id="r-price"></canvas></div>
+        </div>
+
+        <!-- VALUATION + TECHNICALS -->
+        <div class="two-col mb24">
+          <div class="card">
+            <div class="card-title">Valuation Metrics</div>
+            <table class="metrics-tbl">
+              <tr><td>P/E (TTM)</td><td>${r.pe}x</td><td><span class="pill ${r.pe>30?'r':r.pe>20?'a':'g'}">${r.pe>30?'⚠ Rich':r.pe>20?'Moderate':'✓ Fair'}</span></td></tr>
+              <tr><td>Forward P/E</td><td>${r.forwardPe}x</td><td><span class="pill ${r.forwardPe>28?'a':'g'}">${r.forwardPe>28?'⚠ Premium':'✓ OK'}</span></td></tr>
+              <tr><td>PEG Ratio</td><td>${r.peg}</td><td><span class="pill ${r.peg>2?'r':r.peg>1?'a':'g'}">${r.peg>2?'✕ Exp.':r.peg>1?'Moderate':'✓ Value'}</span></td></tr>
+              <tr><td>Price / Sales</td><td>${r.ps}x</td><td><span class="pill ${r.ps>8?'r':r.ps>4?'a':'g'}">${r.ps>8?'⚠ High':r.ps>4?'Elevated':'✓ Fair'}</span></td></tr>
+              <tr><td>Price / FCF</td><td>${r.pfcf}x</td><td><span class="pill ${r.pfcf>35?'r':r.pfcf>20?'a':'g'}">${r.pfcf>35?'⚠ High':r.pfcf>20?'Moderate':'✓ Fair'}</span></td></tr>
+              <tr><td>EV / EBITDA</td><td>${r.evEbitda}x</td><td><span class="pill ${r.evEbitda>30?'r':r.evEbitda>18?'a':'g'}">${r.evEbitda>30?'⚠ Rich':r.evEbitda>18?'Elevated':'✓ Fair'}</span></td></tr>
+            </table>
+            <div class="mt20"><div class="card-title">Valuation vs Sector Avg</div><div class="chart-h200"><canvas id="r-val"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Technical Indicators</div>
+            <table class="metrics-tbl">
+              <tr><td>RSI (14)</td><td>${r.rsi}</td><td><span class="pill ${r.rsi>70?'r':r.rsi>60?'a':'g'}">${r.rsi>70?'⚠ Overbought':r.rsi>60?'⚠ Elevated':'✓ Neutral'}</span></td></tr>
+              <tr><td>50-Day MA</td><td>$${r.ma50.toFixed(2)}</td><td><span class="pill g">✓ +${((r.price/r.ma50-1)*100).toFixed(1)}%</span></td></tr>
+              <tr><td>200-Day MA</td><td>$${r.ma200.toFixed(2)}</td><td><span class="pill g">✓ +${((r.price/r.ma200-1)*100).toFixed(1)}%</span></td></tr>
+              <tr><td>IV 30-Day</td><td>${r.iv30d}%</td><td><span class="pill ${r.iv30d>40?'r':r.iv30d>25?'a':'g'}">${r.iv30d>40?'⚠ Elevated':r.iv30d>25?'Moderate':'✓ Low'}</span></td></tr>
+              <tr><td>Beta</td><td>${r.beta}</td><td><span class="pill ${r.beta>1.5?'a':'g'}">${r.beta>1.5?'⚠ High Beta':'Near Market'}</span></td></tr>
+              <tr><td>Dist. to Support</td><td>${(((r.support/r.price)-1)*100).toFixed(1)}%</td><td><span style="font-size:10px;color:var(--text3);">$${r.support.toFixed(2)}</span></td></tr>
+            </table>
+            <div class="mt20">
+              <div class="card-title">RSI Gauge</div>
+              <div class="rsi-track">
+                <div style="height:100%;background:linear-gradient(90deg,#10d9a0,#f59e0b,#f43f5e);"></div>
+                <div style="position:absolute;top:50%;left:${r.rsi}%;transform:translate(-50%,-50%);width:12px;height:12px;background:#fff;border-radius:50%;border:2px solid #000;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px;font-family:'JetBrains Mono',monospace;">
+                <span>0 Oversold</span><span>30</span><span>50</span><span>70</span><span>Overbought 100</span>
+              </div>
+              <div style="text-align:center;margin-top:8px;font-size:12px;font-weight:600;color:${r.rsi>70?'var(--red)':r.rsi>60?'var(--amber)':'var(--green)'};">RSI: ${r.rsi} — ${r.rsi>70?'Overbought territory':r.rsi>60?'Approaching overbought':'Neutral range'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GROWTH + MARGINS -->
+        <div class="two-col mb24">
+          <div class="card"><div class="card-title">Growth Metrics (YoY %)</div><div class="chart-h260"><canvas id="r-growth"></canvas></div></div>
+          <div class="card"><div class="card-title">Profitability & Margins</div><div class="chart-h260"><canvas id="r-margin"></canvas></div></div>
+        </div>
+
+        <!-- BULL / BEAR -->
+        <div class="section-label">Factor Deep-Dive</div>
+        <div class="factors-grid">
+          <div class="card">
+            <div class="card-title" style="color:var(--green);">✅ Bull Factors (${r.bulls.length})</div>
+            <ul class="factor-list">${factors(r.bulls,'bull')}</ul>
+          </div>
+          <div class="card">
+            <div class="card-title" style="color:var(--red);">🔴 Bear Factors (${r.bears.length})</div>
+            <ul class="factor-list">${factors(r.bears,'bear')}</ul>
+          </div>
+        </div>
+
+        <!-- PORTFOLIO -->
+        <div class="section-label mt24">Portfolio Analysis</div>
+        <div class="three-col">
+          <div class="card"><div class="card-title">Geographic Exposure</div><div class="chart-h260"><canvas id="r-geo"></canvas></div></div>
+          <div class="card">
+            <div class="card-title">Risk Metrics</div>
+            <table class="metrics-tbl">
+              <tr><td>Beta</td><td>${r.beta}</td><td><span class="pill ${r.beta>1.5?'a':'g'}">Near Market</span></td></tr>
+              <tr><td>IV 30-Day</td><td>${r.iv30d}%</td><td><span class="pill ${r.iv30d>35?'r':'g'}">${r.iv30d>35?'Elevated':'Contained'}</span></td></tr>
+              <tr><td>Max Drawdown (52W)</td><td>${r.maxDrawdown}%</td><td><span class="pill r">Tail risk</span></td></tr>
+              <tr><td>Sharpe Ratio</td><td>~${r.sharpe}</td><td><span class="pill ${r.sharpe>1?'g':r.sharpe>0.6?'a':'r'}">${r.sharpe>1?'Strong':r.sharpe>0.6?'Adequate':'Weak'}</span></td></tr>
+              <tr><td>SPY Correlation</td><td>~${(0.5+r.beta*0.3).toFixed(2)}</td><td><span class="pill a">Moderate</span></td></tr>
+            </table>
+            <div style="margin-top:16px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                <div style="font-size:40px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;color:${scoreColor(r.portfolioScore)};">${r.portfolioScore}</div>
+                <div><div style="font-size:13px;font-weight:600;color:${scoreColor(r.portfolioScore)};">Portfolio Health</div><div style="font-size:11px;color:var(--text2);margin-top:3px;">Core position appropriate</div></div>
+              </div>
+              <div style="height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${r.portfolioScore}%;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));border-radius:3px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Income & Sizing</div>
+            <table class="metrics-tbl">
+              <tr><td>Dividend Yield</td><td>${r.divYield}%</td><td><span class="pill ${r.divYield>2?'g':r.divYield>0.5?'a':'r'}">${r.divYield>2?'✓ Good':r.divYield>0.5?'Low':'Minimal'}</span></td></tr>
+              <tr><td>D/E Ratio</td><td>${r.de}</td><td><span class="pill ${r.de<1?'g':r.de<2?'a':'r'}">${r.de<1?'✓ Low':r.de<2?'Moderate':'High'}</span></td></tr>
+              <tr><td>Current Ratio</td><td>${r.currentRatio}</td><td><span class="pill ${r.currentRatio>1.5?'g':r.currentRatio>1?'a':'r'}">${r.currentRatio>1.5?'✓ Strong':r.currentRatio>1?'OK':'⚠ Tight'}</span></td></tr>
+            </table>
+            <div style="margin-top:16px;">
+              <div class="card-title">Suggested Position Size</div>
+              ${[['3–5%','Optimal','var(--green)','var(--green-dim)'],['5–7%','Caution','var(--amber)','var(--amber-dim)'],['>7%','Over-concentration','var(--red)','var(--red-dim)']].map(([sz,lbl,c,bg])=>`
+                <div style="display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:6px;">
+                  <span style="color:${c};font-weight:700;min-width:38px;">${sz}</span>
+                  <div style="flex:1;height:5px;background:${bg};border-radius:3px;"></div>
+                  <span style="color:var(--text2);">${lbl}</span>
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- SCENARIOS -->
+        <div class="section-label mt24">Price Target Scenarios</div>
+        <div class="two-col mb24">
+          <div class="card"><div class="card-title">Probability Distribution</div><div class="chart-h260"><canvas id="r-scenario"></canvas></div></div>
+          <div class="card">
+            <div class="card-title">Scenario Breakdown</div>
+            <div class="scenario-row">
+              <div class="scenario-lbl" style="color:var(--green);">🐂 Bull</div>
+              <div><div class="scenario-bar-bg"><div class="scenario-bar-fill" style="width:${r.scenarios.bull.prob}%;background:var(--green);"></div></div><div style="font-size:10px;color:var(--text3);margin-top:3px;">${r.scenarios.bull.thesis}</div></div>
+              <div class="scenario-pct" style="color:var(--green);">${r.scenarios.bull.prob}%</div>
+              <div class="scenario-tgt">${r.scenarios.bull.target}</div>
+            </div>
+            <div class="scenario-row">
+              <div class="scenario-lbl" style="color:var(--blue);">↔ Base</div>
+              <div><div class="scenario-bar-bg"><div class="scenario-bar-fill" style="width:${r.scenarios.base.prob}%;background:var(--blue);"></div></div><div style="font-size:10px;color:var(--text3);margin-top:3px;">${r.scenarios.base.thesis}</div></div>
+              <div class="scenario-pct" style="color:var(--blue);">${r.scenarios.base.prob}%</div>
+              <div class="scenario-tgt">${r.scenarios.base.target}</div>
+            </div>
+            <div class="scenario-row">
+              <div class="scenario-lbl" style="color:var(--red);">🐻 Bear</div>
+              <div><div class="scenario-bar-bg"><div class="scenario-bar-fill" style="width:${r.scenarios.bear.prob}%;background:var(--red);"></div></div><div style="font-size:10px;color:var(--text3);margin-top:3px;">${r.scenarios.bear.thesis}</div></div>
+              <div class="scenario-pct" style="color:var(--red);">${r.scenarios.bear.prob}%</div>
+              <div class="scenario-tgt">${r.scenarios.bear.target}</div>
+            </div>
+            <div style="margin-top:16px;padding:14px;background:var(--card2);border:1px solid var(--border2);border-radius:9px;">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">12-Month Analyst Consensus</div>
+              <div style="font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;">$${r.consensusLow.toFixed(0)}–$${r.consensusHigh.toFixed(0)}</div>
+              <div style="font-size:11px;color:var(--text3);">Implies ${(((r.consensusLow/r.price)-1)*100).toFixed(1)}% to ${(((r.consensusHigh/r.price)-1)*100).toFixed(1)}% from current</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VERDICT -->
+        <div class="verdict">
+          <div class="verdict-header">
+            <div>
+              <div class="verdict-title">${sigEmoji(r.signal)} ${r.signal} — ${r.signal==='HOLD+'?'Cautious Accumulation':r.signal==='BUY'?'Accumulate on Strength':r.signal==='STRONG BUY'?'High Conviction':r.signal==='HOLD'?'Maintain Positions':r.signal==='SELL'?'Reduce Exposure':'Avoid New Positions'}</div>
+              <div class="verdict-thesis">${r.thesis}</div>
+            </div>
+            <div style="text-align:center;flex-shrink:0;">
+              <div style="font-size:48px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;color:${scoreColor(sc.composite)};">${sc.composite}</div>
+              <div style="font-size:11px;color:var(--text3);">Composite Score</div>
+            </div>
+          </div>
+          <div class="verdict-grid">
+            <div class="verdict-item"><label>Current Price</label><span>${priceTxt}</span></div>
+            <div class="verdict-item"><label>Catalyst</label><span style="color:var(--amber);font-size:13px;">${r.catalyst||'Next Earnings'}</span></div>
+            <div class="verdict-item"><label>Bull Target</label><span style="color:var(--green);">${r.scenarios.bull.target}</span></div>
+            <div class="verdict-item"><label>Bear Target</label><span style="color:var(--red);">${r.scenarios.bear.target}</span></div>
+            <div class="verdict-item"><label>Consensus</label><span>$${r.consensusLow.toFixed(0)}–$${r.consensusHigh.toFixed(0)}</span></div>
+            <div class="verdict-item"><label>Portfolio Weight</label><span style="color:var(--green);">3–5%</span></div>
+          </div>
+          <div class="verdict-action">
+            <strong style="color:var(--amber);">Best Action:</strong> ${r.signal==='BUY'||r.signal==='STRONG BUY'?`Accumulate at current levels. Scale in on any 3–5% dips toward $${r.support.toFixed(0)} support.`:r.signal==='HOLD+'?`Hold existing positions. New entries: scale into $${r.support.toFixed(0)}–$${(r.support*1.02).toFixed(0)} dip zone near 50-DMA. Avoid chasing near resistance $${r.resistance.toFixed(0)}.`:r.signal==='HOLD'?`Maintain current positions. No new entries at this price. Wait for a pullback to the $${r.support.toFixed(0)} zone before adding.`:`Reduce or exit existing positions. Avoid new entries. Manage risk below $${r.support.toFixed(0)}.`}
+          </div>
+        </div>
+
+        <!-- TOKEN USAGE -->
+        <div class="card mb24">
+          <div class="card-title">Token Usage Summary</div>
+          <table class="token-tbl">
+            <thead><tr><th>Step</th><th>Agent</th><th>Est. Tokens</th></tr></thead>
+            <tbody>
+              <tr><td>Orchestration</td><td style="color:var(--text2)">Master Orchestrator</td><td>${r.tokens.orchestrator.toLocaleString()}</td></tr>
+              <tr><td>Quantitative Analysis</td><td style="color:#60a5fa">quant-modeler</td><td>${r.tokens.quant.toLocaleString()}</td></tr>
+              <tr><td>Macro Analysis</td><td style="color:#10d9a0">macro-economist</td><td>${r.tokens.macro.toLocaleString()}</td></tr>
+              <tr><td>Sentiment Analysis</td><td style="color:#a78bfa">behavioral-psychologist</td><td>${r.tokens.sentiment.toLocaleString()}</td></tr>
+              <tr><td><strong>Total</strong></td><td><strong>3 Agents + Orchestrator</strong></td><td><strong>${r.tokens.total.toLocaleString()}</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <div class="footer-brand">Invest<span>PAL</span> — AI Trading Analyst</div>
+        <div class="footer-note">Report: ${r.analyzedAt} · quant-modeler · macro-economist · behavioral-psychologist<br/>For educational & research purposes only. Not financial advice.</div>
+      </footer>
+    </div>`;
+}
+
+/* ── CHART INIT ─────────────────────────────────────────────── */
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#1b2840';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+function makeGauge(id, score, color) {
+  makeChart(id, {
+    type:'doughnut',
+    data:{ datasets:[{ data:[score,100-score], backgroundColor:[color,'rgba(27,40,64,0.8)'], borderWidth:0, borderRadius:[4,0] }] },
+    options:{ cutout:'70%', rotation:-110, circumference:220, plugins:{ legend:{display:false}, tooltip:{enabled:false} }, animation:{duration:1000,easing:'easeOutQuart'} }
+  });
+}
+
+function initCharts(r) {
+  if (!r) return;
+  const sc = r.scores;
+  makeGauge('r-g-quant',  sc.quant,     '#60a5fa');
+  makeGauge('r-g-macro',  sc.macro,     '#f59e0b');
+  makeGauge('r-g-sent',   sc.sentiment, '#10d9a0');
+  makeGauge('r-g-comp',   sc.composite, scoreColor(sc.composite));
+
+  // Price chart
+  const n = 65;
+  const today = new Date('2026-05-27');
+  const tradingDays = [];
+  for (let back = n+20; back >= 0 && tradingDays.length < n; back--) {
+    const d = new Date(today); d.setDate(d.getDate()-back);
+    if (d.getDay()!==0 && d.getDay()!==6) tradingDays.push(d);
+  }
+  const labels = tradingDays.map(d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+  const start = r.priceStart || r.price * 0.82;
+  const end = r.price;
+  const pData = tradingDays.map((_, i) => {
+    const pct = i / (n-1);
+    const seed = hashStr(r.ticker + i);
+    const noise = (seeded(seed, -1, 1)) * end * 0.018;
+    let p = start + (end - start) * pct + noise;
+    if (i === n-1) p = end;
+    return parseFloat(p.toFixed(2));
+  });
+  const ma50D = tradingDays.map((_, i) => parseFloat((r.ma200 + (r.ma50 - r.ma200) * (i / (n-1))).toFixed(2)));
+  const ma200D = tradingDays.map((_, i) => parseFloat((r.ma200 * 0.97 + r.ma200 * 0.03 * (i/(n-1))).toFixed(2)));
+  ma50D[n-1] = r.ma50; ma200D[n-1] = r.ma200;
+
+  makeChart('r-price', {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'Price', data:pData, borderColor:'#60a5fa', borderWidth:2, pointRadius:0, pointHoverRadius:3, fill:true,
+        backgroundColor: ctx => { const {ctx:c,chartArea} = ctx.chart; if(!chartArea) return 'rgba(96,165,250,0.05)'; const g=c.createLinearGradient(0,chartArea.top,0,chartArea.bottom); g.addColorStop(0,'rgba(96,165,250,0.16)'); g.addColorStop(1,'rgba(96,165,250,0)'); return g; }, tension:0.3 },
+      { label:'50-DMA', data:ma50D, borderColor:'#60a5fa', borderWidth:1.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0.3 },
+      { label:'200-DMA', data:ma200D, borderColor:'#a78bfa', borderWidth:1.5, borderDash:[3,3], pointRadius:0, fill:false, tension:0.3 },
+      { label:`Support $${r.support.toFixed(0)}`, data:tradingDays.map(()=>r.support), borderColor:'rgba(16,217,160,0.4)', borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension:0 },
+      { label:`Resist. $${r.resistance.toFixed(0)}`, data:tradingDays.map(()=>r.resistance), borderColor:'rgba(244,63,94,0.4)', borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension:0 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{ legend:{display:true,position:'top',labels:{usePointStyle:true,pointStyle:'line',boxWidth:22,font:{size:10}}},
+        tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: $${c.parsed.y.toFixed(2)}` } } },
+      scales:{ x:{grid:{color:'rgba(27,40,64,0.5)'},ticks:{maxTicksLimit:7,font:{size:9,family:"'JetBrains Mono',monospace"}}},
+               y:{grid:{color:'rgba(27,40,64,0.5)'},ticks:{callback:v=>'$'+v,font:{size:9,family:"'JetBrains Mono',monospace"}}} } }
+  });
+
+  // Valuation bar
+  makeChart('r-val', {
+    type:'bar',
+    data:{ labels:['P/E','Fwd P/E','PEG×10','P/S','EV/EBITDA'],
+      datasets:[
+        { label:r.ticker, data:[r.pe,r.forwardPe,r.peg*10,r.ps,r.evEbitda], backgroundColor:'rgba(96,165,250,0.7)', borderRadius:4 },
+        { label:'Sector Avg', data:[r.pe*0.7,r.forwardPe*0.7,r.peg*10*0.65,r.ps*0.63,r.evEbitda*0.72], backgroundColor:'rgba(167,139,250,0.4)', borderRadius:4 },
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:true,position:'top',labels:{font:{size:9},boxWidth:10}} },
+      scales:{ x:{grid:{display:false},ticks:{font:{size:9}}}, y:{grid:{color:'rgba(27,40,64,0.5)'},ticks:{font:{size:9}}} } }
+  });
+
+  // Growth bar
+  makeChart('r-growth', {
+    type:'bar',
+    data:{ labels:['Rev YoY','EPS YoY','Q2 Rev','FCF Growth'],
+      datasets:[{ label:'%', data:[r.revenueGrowth,r.epsGrowth,r.q2Growth,r.fcfGrowth],
+        backgroundColor:['rgba(16,217,160,0.7)','rgba(16,217,160,0.7)','rgba(96,165,250,0.7)','rgba(245,158,11,0.7)'], borderRadius:6 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.parsed.y}%`}} },
+      scales:{ x:{grid:{display:false},ticks:{font:{size:10}}}, y:{grid:{color:'rgba(27,40,64,0.5)'},ticks:{callback:v=>v+'%',font:{size:9}},beginAtZero:true} } }
+  });
+
+  // Margin bar
+  makeChart('r-margin', {
+    type:'bar',
+    data:{ labels:['Gross','Operating','Net','FCF'],
+      datasets:[{ label:'%', data:[r.grossMargin,r.opMargin,r.netMargin,r.fcfMargin],
+        backgroundColor:['rgba(16,217,160,0.75)','rgba(96,165,250,0.75)','rgba(167,139,250,0.75)','rgba(245,158,11,0.75)'], borderRadius:6 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.parsed.y}%`}} },
+      scales:{ x:{grid:{display:false},ticks:{font:{size:10}}}, y:{grid:{color:'rgba(27,40,64,0.5)'},ticks:{callback:v=>v+'%',font:{size:9}},beginAtZero:true,max:Math.ceil(r.grossMargin/10)*10+10} } }
+  });
+
+  // Geo doughnut
+  const geo = r.geo || {us:100};
+  const geoLabels = ['Americas (US)','Greater China','Europe','Japan','Rest of Asia'];
+  const geoData = [geo.us||0,geo.china||0,geo.europe||0,geo.japan||0,geo.restAsia||0];
+  makeChart('r-geo', {
+    type:'doughnut',
+    data:{ labels:geoLabels, datasets:[{ data:geoData, backgroundColor:['#60a5fa','#f43f5e','#10d9a0','#a78bfa','#f59e0b'], borderWidth:2, borderColor:'#0f1626', hoverOffset:5 }]},
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins:{ legend:{position:'bottom',labels:{font:{size:9},padding:8,boxWidth:10,usePointStyle:true}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed}%`}} } }
+  });
+
+  // Scenario bar
+  const sc2 = r.scenarios;
+  makeChart('r-scenario', {
+    type:'bar',
+    data:{ labels:['🐂 Bull','↔ Base','🐻 Bear'],
+      datasets:[{ label:'Probability %', data:[sc2.bull.prob,sc2.base.prob,sc2.bear.prob],
+        backgroundColor:['rgba(16,217,160,0.7)','rgba(96,165,250,0.7)','rgba(244,63,94,0.7)'], borderRadius:6 }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.parsed.x}% probability`}} },
+      scales:{ x:{grid:{color:'rgba(27,40,64,0.5)'},ticks:{callback:v=>v+'%',font:{size:9}},beginAtZero:true,max:60},
+               y:{grid:{display:false},ticks:{font:{size:11}}} } }
+  });
+}
+
+/* ── RENDER ─────────────────────────────────────────────────── */
+function render() {
+  const app = document.getElementById('app');
+  if (S.view === 'home')   app.innerHTML = renderHome();
+  if (S.view === 'report') app.innerHTML = renderReport(S.activeReport);
+  attachInputHandlers();
+}
+
+function attachInputHandlers() {
+  const ms = document.getElementById('mainSearch');
+  if (ms) {
+    ms.addEventListener('keydown', e => { if (e.key === 'Enter') handleAnalyze(); });
+    ms.focus();
+  }
+  const hs = document.getElementById('hdrSearchInput');
+  if (hs) hs.addEventListener('keydown', e => { if (e.key === 'Enter') handleHdrAnalyze(); });
+}
+
+/* ── EVENT HANDLERS ─────────────────────────────────────────── */
+function handleAnalyze() {
+  const inp = document.getElementById('mainSearch');
+  const t = inp ? inp.value.trim() : '';
+  if (t) analyzeStock(t);
+}
+function handleHdrAnalyze() {
+  const inp = document.getElementById('hdrSearchInput');
+  const t = inp ? inp.value.trim() : '';
+  if (t) { analyzeStock(t); }
+}
+function openReport(id) {
+  const r = S.reports.find(x => x.id === id);
+  if (r && r.status === 'generated') { destroyCharts(); navigate('report', r); }
+}
+function deleteReport(id, e) {
+  e.stopPropagation();
+  S.reports = S.reports.filter(r => r.id !== id);
+  saveReports();
+  render();
+}
+
+/* ── INIT ───────────────────────────────────────────────────── */
+function init() {
+  loadReports();
+  render();
+}
+init();
+</script>
+</body>
+</html>
