@@ -24,9 +24,9 @@ const OUTPUT_FILE = path.join(ROOT, 'output', 'quick-portfolio-output.md');
 /* ── Job store ──────────────────────────────────────────────── */
 const jobs = new Map();  // id → job
 
-function newJob(ticker) {
+function newJob(ticker, apiKey) {
   const id = crypto.randomBytes(6).toString('hex');
-  const job = { id, ticker, status: 'running', report: null, error: null, clients: [] };
+  const job = { id, ticker, apiKey, status: 'running', report: null, error: null, clients: [] };
   jobs.set(id, job);
   return job;
 }
@@ -175,7 +175,7 @@ function findClaude() {
 }
 
 function runAnalysis(job) {
-  const { ticker } = job;
+  const { ticker, apiKey } = job;
 
   // Ensure output directory exists in all environments (host/docker).
   try { fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true }); } catch (_) {}
@@ -195,7 +195,12 @@ function runAnalysis(job) {
 
   const proc = spawn(claude, ['--dangerously-skip-permissions', '-p', prompt], {
     cwd: ROOT,
-    env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
+    env: {
+      ...process.env,
+      FORCE_COLOR: '0',
+      NO_COLOR: '1',
+      ANTHROPIC_API_KEY: apiKey,
+    },
   });
 
   const seen = new Set();
@@ -289,6 +294,7 @@ function runAnalysis(job) {
     if (report) {
       job.status = 'done';
       job.report = report;
+      job.apiKey = null;
       push(job, 'done', { report });
     } else {
       const stdoutTail = (stdout || '').trim().split('\n').slice(-20).join('\n');
@@ -296,6 +302,7 @@ function runAnalysis(job) {
       job.error = code !== 0
         ? `claude exited with code ${code}. Check that the claude CLI is installed and authenticated.`
         : `Output file not found at ${OUTPUT_FILE}. The skill may not have written its output.\nRecent Claude output:\n${stdoutTail || '(no stdout captured)'}`;
+      job.apiKey = null;
       push(job, 'error', { message: job.error });
       console.error(`[${ticker}] Error:`, job.error);
     }
@@ -309,6 +316,7 @@ function runAnalysis(job) {
   proc.on('error', err => {
     clearInterval(ticker_interval);
     job.status = 'error';
+    job.apiKey = null;
     job.error = `Failed to launch claude: ${err.message}.\nMake sure the Claude Code CLI is installed (npm i -g @anthropic-ai/claude-code).`;
     push(job, 'error', { message: job.error });
     job.clients.forEach(r => { try { r.end(); } catch (_) {} });
@@ -334,13 +342,23 @@ const server = http.createServer((req, res) => {
     req.on('data', d => body += d);
     req.on('end', () => {
       let ticker = '';
-      try { ticker = JSON.parse(body).ticker || ''; } catch (_) {}
+      let apiKey = '';
+      try {
+        const parsed = JSON.parse(body);
+        ticker = parsed.ticker || '';
+        apiKey = parsed.apiKey || '';
+      } catch (_) {}
       ticker = ticker.trim().toUpperCase().replace(/[^A-Z0-9.]/g, '');
+      apiKey = apiKey.trim();
       if (!ticker || ticker.length > 7) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ error: 'Invalid ticker' }));
       }
-      const job = newJob(ticker);
+      if (!apiKey) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'API key is required' }));
+      }
+      const job = newJob(ticker, apiKey);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ jobId: job.id, ticker }));
       setImmediate(() => runAnalysis(job));

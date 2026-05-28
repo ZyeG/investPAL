@@ -94,6 +94,21 @@
     }
     .search-btn:hover { opacity:.85; }
     .search-btn:disabled { opacity:.4; cursor:default; }
+    .api-key-row {
+      max-width:560px; margin:10px auto 0;
+      display:flex; align-items:center; gap:10px;
+      background:var(--card2); border:1px solid var(--border);
+      border-radius:10px; padding:10px 12px;
+    }
+    .api-key-row label {
+      font-size:11px; color:var(--text2); white-space:nowrap;
+      font-family:'JetBrains Mono',monospace;
+    }
+    .api-key-row input {
+      flex:1; min-width:0; background:none; border:none; outline:none;
+      color:var(--text); font-size:12px; font-family:'JetBrains Mono',monospace;
+    }
+    .api-key-row input::placeholder { color:var(--text3); }
     .agents-badge { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; flex-wrap:wrap; }
     .agent-chip { display:inline-flex; align-items:center; gap:5px; background:var(--card2); border:1px solid var(--border); border-radius:100px; padding:4px 12px; font-size:11px; color:var(--text3); }
     .agent-chip span { font-weight:600; }
@@ -439,6 +454,7 @@ const S = {
   loadingTicker: '',
   loadingStage: 0,    // 0-6
   loadingTokens: 0,
+  apiKey: '',
 };
 
 /* ── STORAGE ────────────────────────────────────────────────── */
@@ -616,6 +632,10 @@ function renderHome() {
           <input id="mainSearch" type="text" placeholder="Enter ticker: AAPL, NVDA, SPY, TSLA…" autocomplete="off" autocorrect="off" spellcheck="false" />
           <button class="search-btn" id="analyzeBtn" onclick="handleAnalyze()">Analyze →</button>
         </div>
+        <div class="api-key-row">
+          <label for="apiKeyInput">API Key</label>
+          <input id="apiKeyInput" type="password" placeholder="Enter your API key (used for this session only)" autocomplete="off" autocorrect="off" spellcheck="false" />
+        </div>
         <div class="agents-badge">
           <span class="agent-chip" style="color:#60a5fa;"><span>📐</span> quant-modeler · 40%</span>
           <span class="agent-chip" style="color:#10d9a0;"><span>🌍</span> macro-economist · 30%</span>
@@ -712,11 +732,11 @@ const _ui = {
 /* ── REAL analysis via server.js ─────────────────────────────── */
 const API_BASE = window.location.origin;
 
-async function analyzeWithServer(ticker, placeholderId) {
+async function analyzeWithServer(ticker, placeholderId, apiKey) {
   // Start the job
   const resp = await fetch(`${API_BASE}/api/analyze`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ ticker }),
+    body: JSON.stringify({ ticker, apiKey }),
   });
   if (!resp.ok) throw new Error(await resp.text());
   const { jobId } = await resp.json();
@@ -810,6 +830,8 @@ async function analyzeWithMock(ticker, placeholderId) {
 async function analyzeStock(ticker) {
   ticker = ticker.trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');
   if (!ticker || ticker.length > 7) { alert('Please enter a valid ticker (e.g. AAPL, NVDA, SPY).'); return; }
+  const apiKey = (S.apiKey || '').trim();
+  if (!apiKey) { alert('Please enter your API key.'); return; }
 
   S.isAnalyzing = true;
   S.loadingTicker = ticker;
@@ -826,7 +848,7 @@ async function analyzeStock(ticker) {
   let report;
   try {
     // Try real server first
-    report = await analyzeWithServer(ticker, placeholderId);
+    report = await analyzeWithServer(ticker, placeholderId, apiKey);
   } catch (serverErr) {
     console.info(`Server unavailable (${serverErr.message}), using demo mode.`);
     // Clear token interval from a failed server attempt
@@ -1294,6 +1316,11 @@ function attachInputHandlers() {
   if (ms) {
     ms.addEventListener('keydown', e => { if (e.key === 'Enter') handleAnalyze(); });
     ms.focus();
+  }
+  const keyInput = document.getElementById('apiKeyInput');
+  if (keyInput) {
+    keyInput.value = S.apiKey || '';
+    keyInput.addEventListener('input', () => { S.apiKey = keyInput.value; });
   }
   const hs = document.getElementById('hdrSearchInput');
   if (hs) hs.addEventListener('keydown', e => { if (e.key === 'Enter') handleHdrAnalyze(); });
