@@ -193,7 +193,7 @@ function runAnalysis(job) {
 
   console.log(`[${ticker}] Running: ${claude} -p "${prompt}"`);
 
-  const proc = spawn(claude, ['-p', prompt], {
+  const proc = spawn(claude, ['--dangerously-skip-permissions', '-p', prompt], {
     cwd: ROOT,
     env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
   });
