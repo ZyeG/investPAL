@@ -2,6 +2,7 @@
 investPAL is an multi-agent investment tool that automates professional analysis workflow.
 While standard human analysis forces repetitive manual work; and existing AI tools lack backtesting validation, and generates analysis too complex for everyday users to interpret effectively, investPAL orchestrates specialized quant-modeler, macro-economist, and behavioral-psychologist AI subagents in parallel to replicate institutional evaluation protocols, utilizes a dedicated historical backtesting engine to build measurable strategy confidence, and offers a dual user experience where a visual Web UI charts complex numeric data while an interactive CLI allows non-professionals to easily interpret long reports through natural-language chat.
 
+Try at http://165.245.226.123:3737/, latest code on branch feature/frontend
 
 ## Features
 
